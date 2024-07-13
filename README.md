@@ -14,7 +14,7 @@ Every process in MOTAO has a domain name as its unique identifier. The domain re
 
 Returns the process id which is currently the owner and pid of this domain. 
 
-```json
+```
 dryrun({
 		Target = "{Domain Process ID}",
 		Data = "{name}"
@@ -28,7 +28,7 @@ dryrun({
 
 Return the Domain names under this owner
 
-```json
+```
 dryrun({
 		Target = "{Domain Process ID}",
 		Data = "{owner}"
@@ -42,7 +42,7 @@ dryrun({
 
 Register a domain name, which PID as the current domain user and an owner who can reassign this domain.
 
-```json
+```
 send({
 		Target = "{Domain Process ID}",
 		Data = {
@@ -59,7 +59,7 @@ send({
 
 Renounce the domain, set it free. Can only be called by current owner
 
-```json
+```
 send({
 		Target = "{Domain Process ID}",
 		Data = {
