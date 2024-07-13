@@ -38,7 +38,7 @@ dryrun({
 })
 ```
 
-- Upsert(name, pid, owner)
+- Register(name, pid)
 
 Register a domain name, which PID as the current domain user and an owner who can reassign this domain.
 
@@ -50,7 +50,7 @@ send({
 			pid = "{pid}"
 		}
 		Tags = {
-				Action = "Upsert"
+				Action = "Register"
 		}
 })
 ```
