@@ -4,47 +4,54 @@ Messages and other stuff transmitted by AO
 
 ## Background
 
-AO, the computer, is a promising new infrastructure that enables Web3 applications to deliver a Web2 experience. To enhance the AO ecosystem, a protocol is required to establish a standardized messaging framework for AO processes to communicate.
+AO, the computer, is a promising new infrastructure that enables Web3 applications to deliver a Web2 experience. To enhance the AO ecosystem, a protocol is required to establish a standardized messaging system for processes to communicate.
 
-## MIP-01 Domain
+## Conceptes
 
-Every process in MOSTAO has a domain name as its unique identifier. The domain records are managed by a domain process. The protocol for the domain process is as follows:
+- Avatar: processes living on AO who serves as the agents of users. A user will chat and do other stuffs via an avatar
+- Handle: A handle is the unique identifier of an avatar
+- Session: A session is process establish between two avatars. A session is responsible for keeping the message history and key exchange
+- Router: spawn and keep records of all sessions 
 
-- QueryDomain(name)
+## Handle Registry
 
-Returns the process id which is currently the owner and pid of this domain.
+Every process in MOSTAO has a (social)handle as its unique identifier. The handle records are managed by a handle registry process. The activities of the registry process is as follows:
+
+### QueryHandle(name)
+
+Returns the process id which is currently the owner and pid of this handle.
 
 ```lua
 dryrun({
-  Target = "{Domain Process ID}",
+  Target = "{Registry Process ID}",
   Data = "{name}",
   Tags = {
-    Action = "QueryDomain"
+    Action = "QueryHandle"
   }
 })
 ```
 
-- GetDomains(owner)
+### GetHandles(owner)
 
-Return the Domain names under this owner
+Return the handles under this owner (wallet address)
 
 ```lua
 dryrun({
-  Target = "{Domain Process ID}",
+  Target = "{Registry Process ID}",
   Data = "{owner}",
   Tags = {
-    Action = "GetDomains"
+    Action = "GetHandles"
   }
 })
 ```
 
-- Register(name, pid)
+### Register(name, pid)
 
-Register a domain name, which PID as the current domain user and an owner who can reassign this domain.
+Register a handle name, with PID as the avatar user and an owner who can reassign this handle.
 
 ```lua
 send({
-  Target = "{Domain Process ID}",
+  Target = "{Handle Process ID}",
   Data = {
    name = "{name}",
    pid = "{pid}"
@@ -55,13 +62,13 @@ send({
 })
 ```
 
-- Renounce(Name)
+### Renounce(Name)
 
-Renounce the domain, set it free. Can only be called by current owner
+Renounce a handle, set it free. Can only be called by current owner
 
 ```lua
 send({
-  Target = "{Domain Process ID}",
+  Target = "{Registry Process ID}",
   Data = {
    name = "{name}"
   },
@@ -71,14 +78,9 @@ send({
 })
 ```
 
-## MIP-02 Profile
+## Avatar
 
-Each wallet address can be associated with multiple profiles, with each profile managed by a separate process. Each profile includes personal information such as an avatar, nickname, and other details. Additionally, each process contains various related entities, such as an unread message box, a contacts list, and more.
-
-## MIP-03 Chat Session
-
-A Chat Session is established as a process when direct messaging (DM) or group chat operations are conducted between Profile Processes. Each Chat Session Process manages the interactions and data exchange for a specific conversation, ensuring secure and organized communication. The session includes entities such as message history, participant list, and session metadata.
-
-## MIP-04 Chatroom(Chat Session Indexer)
-
-The Chatroom, also known as the Chat Session Indexer, is a process responsible for indexing and managing all active Chat Sessions. This process internally stores identifiers for all chat sessions along with their corresponding process IDs. Access to these indexes is restricted: only participants of a private chat (DM) or members of a public group chat can query the session information. Unauthorized users cannot access or query private chat sessions, ensuring secure and private communication. The Chatroom includes entities such as an index of active sessions, metadata for each session, and tools for authorized users to search and retrieve chat histories.
+An avatar is a spawned process that act as an agent for a user. An avatar should bind to a handle for the users in this protocol to find each other.
+An avatar has those functions:
+1. keep a profile along with env variables
+2. keep records of session ids between this avatar and others (avatar or g)
