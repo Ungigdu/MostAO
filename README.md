@@ -8,7 +8,7 @@ AO, the computer, is a promising new infrastructure that enables Web3 applicatio
 
 ## MIP-01 Domain
 
-Every process in MOTAO has a domain name as its unique identifier. The domain records are managed by a domain process. The protocol for the domain process is as follows:
+Every process in MOSTAO has a domain name as its unique identifier. The domain records are managed by a domain process. The protocol for the domain process is as follows:
 
 - QueryDomain(name)
 
