@@ -75,3 +75,7 @@ send({
 
 Each wallet address can be associated with multiple profiles, with each profile managed by a separate process. Each profile includes personal information such as an avatar, nickname, and other details. Additionally, each process contains various related entities, such as an unread message box, a contacts list, and more.
 
+## MIP-03 Chat Session
+
+A Chat Session is established as a process when direct messaging (DM) or group chat operations are conducted between Profile Processes. Each Chat Session Process manages the interactions and data exchange for a specific conversation, ensuring secure and organized communication. The session includes entities such as message history, participant list, and session metadata.
+
