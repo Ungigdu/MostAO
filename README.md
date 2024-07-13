@@ -79,3 +79,6 @@ Each wallet address can be associated with multiple profiles, with each profile 
 
 A Chat Session is established as a process when direct messaging (DM) or group chat operations are conducted between Profile Processes. Each Chat Session Process manages the interactions and data exchange for a specific conversation, ensuring secure and organized communication. The session includes entities such as message history, participant list, and session metadata.
 
+## MIP-04 Chatroom(Chat Session Indexer)
+
+The Chatroom, also known as the Chat Session Indexer, is a process responsible for indexing and managing all active Chat Sessions. This process internally stores identifiers for all chat sessions along with their corresponding process IDs. Access to these indexes is restricted: only participants of a private chat (DM) or members of a public group chat can query the session information. Unauthorized users cannot access or query private chat sessions, ensuring secure and private communication. The Chatroom includes entities such as an index of active sessions, metadata for each session, and tools for authorized users to search and retrieve chat histories.
