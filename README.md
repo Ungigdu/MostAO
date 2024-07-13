@@ -12,15 +12,15 @@ Every process in MOSTAO has a domain name as its unique identifier. The domain r
 
 - QueryDomain(name)
 
-Returns the process id which is currently the owner and pid of this domain. 
+Returns the process id which is currently the owner and pid of this domain.
 
-```
+```lua
 dryrun({
-		Target = "{Domain Process ID}",
-		Data = "{name}"
-		Tags = {
-				Action = "QueryDomain",
-		}
+  Target = "{Domain Process ID}",
+  Data = "{name}",
+  Tags = {
+    Action = "QueryDomain"
+  }
 })
 ```
 
@@ -28,13 +28,13 @@ dryrun({
 
 Return the Domain names under this owner
 
-```
+```lua
 dryrun({
-		Target = "{Domain Process ID}",
-		Data = "{owner}"
-		Tags = {
-				Action = "GetDomains",
-		}
+  Target = "{Domain Process ID}",
+  Data = "{owner}",
+  Tags = {
+    Action = "GetDomains"
+  }
 })
 ```
 
@@ -42,16 +42,16 @@ dryrun({
 
 Register a domain name, which PID as the current domain user and an owner who can reassign this domain.
 
-```
+```lua
 send({
-		Target = "{Domain Process ID}",
-		Data = {
-			name = "{name}",
-			pid = "{pid}"
-		}
-		Tags = {
-				Action = "Register"
-		}
+  Target = "{Domain Process ID}",
+  Data = {
+   name = "{name}",
+   pid = "{pid}"
+  },
+  Tags = {
+    Action = "Register"
+  }
 })
 ```
 
@@ -59,14 +59,14 @@ send({
 
 Renounce the domain, set it free. Can only be called by current owner
 
-```
+```lua
 send({
-		Target = "{Domain Process ID}",
-		Data = {
-			name = "{name}",
-		}
-		Tags = {
-				Action = "Renounce"
-		}
+  Target = "{Domain Process ID}",
+  Data = {
+   name = "{name}"
+  },
+  Tags = {
+    Action = "Renounce"
+  }
 })
 ```
