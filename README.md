@@ -70,3 +70,8 @@ send({
   }
 })
 ```
+
+## MIP-02 Profile
+
+Each wallet address can be associated with multiple profiles, with each profile managed by a separate process. Each profile includes personal information such as an avatar, nickname, and other details. Additionally, each process contains various related entities, such as an unread message box, a contacts list, and more.
+
