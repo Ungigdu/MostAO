@@ -192,7 +192,7 @@
   font-size: 20px;
   color: gray;
   line-height: 30px;
-  margin-right: 115px;
+  margin-right: 235px;
   margin-top: 50px;
 }
 
@@ -288,5 +288,9 @@
 @media (max-width: 600px) {
   .home-page-header {
     flex-direction: column;
+  }
+
+  .home-page-title {
+    margin-right: 80px;
   }
 }

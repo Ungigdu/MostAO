@@ -203,11 +203,11 @@ class HomePage extends React.Component<{}, HomePageState> {
   renderSignUp() {
     return (
       <div>
-        <div className='home-page-title'>Pick a domain to sign up a new DID.</div>
+        <div className='home-page-title'>Sign up a new handle</div>
         <div>
           <input
             className="home-page-input"
-            placeholder="Domain name"
+            placeholder="Handle name"
           // value={this.state.msg}
           // onChange={(e) => this.setState({ msg: e.target.value })}
           // onKeyDown={this.handleKeyDown}
@@ -250,7 +250,7 @@ class HomePage extends React.Component<{}, HomePageState> {
           {this.renderHeader()}
           {this.state.bSignup && this.renderSignUp()}
 
-          <div className='home-page-did-title'>You already have these DIDs (Domains).
+          <div className='home-page-did-title'>You already have these handles.
             <br /> Pick one to enter or create a new one.
           </div>
 
