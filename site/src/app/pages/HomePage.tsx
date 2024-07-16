@@ -1,10 +1,11 @@
 import React from 'react';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { checkContent, connectWallet, getWalletAddress, isLoggedIn, timeOfNow, uuid, randomAvatar, getProfile } from '../util/util';
+import { checkContent, connectWallet, getWalletAddress, isLoggedIn, timeOfNow, uuid, randomAvatar, getProfile, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
+import { HANDLE_REGISTRY } from '../util/consts';
 
 declare var window: any;
 
@@ -26,6 +27,7 @@ interface HomePageState {
   openEditProfile: boolean;
   profile: any;
   handles: any;
+  handleName: any;
   bSignup: boolean;
 }
 
@@ -54,6 +56,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       openEditProfile: false,
       profile: '',
       handles: [],
+      handleName: '',
       bSignup: false,
     };
 
@@ -77,20 +80,23 @@ class HomePage extends React.Component<{}, HomePageState> {
     this.setState({ isLoggedIn: address, address });
 
     // FOR TEST
-    if (address) this.getUserHandles();
+    if (address) this.getUserHandles(address);
   }
 
-  async getUserHandles() {
-    // get the user's handles
-    // let handles = await Service.getUserHandles(address);
-
-    // FOR TEST
-    // let handles = [] as any;
-    let handles = ['handle-1', 'handle-2'];
+  async getUserHandles(address: string) {
+    try {
+      // get the user's handles
+      let response: Array<{ handle: string}> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { "owner": address });
+      console.log("response:", JSON.stringify(response));
+  
+      const handles = response.map(item => item.handle);
 
     this.setState({ handles });
+    } catch (error) {
+      console.error("Error fetching handles:", error);
+      this.setState({ handles: [] }); // Set to empty array in case of error
+    }
   }
-
   async connectWallet() {
     let connected = await connectWallet();
     if (connected) {
@@ -100,7 +106,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       this.setState({ isLoggedIn: 'true', address });
 
       // FOR TEST
-      this.getUserHandles();
+      // this.getUserHandles();
 
       // TODO: should check to if is exist of profile
       // if (await this.getProfile() == false)
@@ -131,10 +137,12 @@ class HomePage extends React.Component<{}, HomePageState> {
   // Register one user
   // This is a temp way, need to search varibale Members
   // to keep one, on browser side or AOS side (in lua code)
-  async register(address: string) {
-    let nickname = address.substring(0, 4) + '...' + address.substring(address.length - 4);
-    let data = { address, avatar: randomAvatar(), banner: '', nickname, bio: '', time: timeOfNow() };
-    // messageToAO(MINI_SOCIAL, data, 'Register');
+  async register(handleName: string) {
+    // let nickname = address.substring(0, 4) + '...' + address.substring(address.length - 4);
+    // let data = { address, avatar: randomAvatar(), banner: '', nickname, bio: '', time: timeOfNow() };
+    let new_process = await spawnProcess();
+    console.log("Spawn --> new_process:", new_process)
+    messageToAO(HANDLE_REGISTRY, {"handle": handleName, "pid": new_process}, 'Register');
   }
 
   async disconnectWallet() {
@@ -208,12 +216,12 @@ class HomePage extends React.Component<{}, HomePageState> {
           <input
             className="home-page-input"
             placeholder="Handle name"
-          // value={this.state.msg}
-          // onChange={(e) => this.setState({ msg: e.target.value })}
+            value={this.state.handleName}
+            onChange={(e) => this.setState({ handleName: e.target.value })}
           // onKeyDown={this.handleKeyDown}
           />
 
-          <button className="home-signup-button" onClick={() => this.connectWallet()}>
+          <button className="home-signup-button" onClick={() => this.register(this.state.handleName)}>
             Sign Up
           </button>
         </div>
