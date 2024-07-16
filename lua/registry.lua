@@ -34,11 +34,14 @@ Handlers.add(
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_handles({
+        stmt:bind_names({
             handle = data.handle
         })
 
         local rows = query(stmt)
+        print('QueryHandle: ' .. data.handle)
+        print('PID: ' .. rows[1].pid)
+        print('Owner: ' .. rows[1].owner)
         Handlers.utils.reply(json.encode(rows))(msg)
         print('QueryHandle Done!')
     end
@@ -58,11 +61,13 @@ Handlers.add(
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_handles({
+        stmt:bind_names({
             owner = data.owner
         })
 
         local rows = query(stmt)
+        print('Getting handles for: ' .. data.owner)
+        print('result: ' .. json.encode(rows))
         Handlers.utils.reply(json.encode(rows))(msg)
         print('GetHandles Done!')
     end
@@ -74,6 +79,9 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
+        print('Registering handle: ' .. data.handle)
+        print('PID: ' .. data.pid)
+        print('Owner: ' .. msg.From)
         local stmt = DB:prepare [[
       REPLACE INTO handles (handle, pid, owner) VALUES (:handle, :pid, :owner);
     ]]
@@ -82,7 +90,7 @@ Handlers.add(
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_handles({
+        stmt:bind_names({
             handle = data.handle,
             pid = data.pid,
             owner = msg.From
@@ -109,7 +117,7 @@ Handlers.add(
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        checkStmt:bind_handles({ handle = data.handle })
+        checkStmt:bind_names({ handle = data.handle })
         local rows = query(checkStmt)
 
         if #rows == 0 or rows[1].owner ~= msg.From then
@@ -126,7 +134,7 @@ Handlers.add(
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_handles({
+        stmt:bind_names({
             handle = data.handle,
             owner = data.owner
         })
