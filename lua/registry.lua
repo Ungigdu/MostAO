@@ -4,8 +4,8 @@ local sqlite3 = require("lsqlite3")
 DB = DB or sqlite3.open_memory()
 
 DB:exec [[
-  CREATE TABLE IF NOT EXISTS domains (
-    domain TEXT PRIMARY KEY,
+  CREATE TABLE IF NOT EXISTS handles (
+    handle TEXT PRIMARY KEY,
     pid TEXT NOT NULL,
     owner TEXT NOT NULL
   );
@@ -21,50 +21,50 @@ local function query(stmt)
 end
 
 Handlers.add(
-    "QueryDomain",
-    Handlers.utils.hasMatchingTag("Action", "QueryDomain"),
+    "QueryHandle",
+    Handlers.utils.hasMatchingTag("Action", "QueryHandle"),
     function(msg)
         local data = json.decode(msg.Data)
 
         local stmt = DB:prepare [[
-      SELECT pid, owner FROM domains WHERE domain = :domain;
+      SELECT pid, owner FROM handles WHERE handle = :handle;
     ]]
 
         if not stmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_domains({
-            domain = data.domain
+        stmt:bind_handles({
+            handle = data.handle
         })
 
         local rows = query(stmt)
         Handlers.utils.reply(json.encode(rows))(msg)
-        print('QueryDomain Done!')
+        print('QueryHandle Done!')
     end
 )
 
 Handlers.add(
-    "GetDomains",
-    Handlers.utils.hasMatchingTag("Action", "GetDomains"),
+    "GetHandles",
+    Handlers.utils.hasMatchingTag("Action", "GetHandles"),
     function(msg)
         local data = json.decode(msg.Data)
 
         local stmt = DB:prepare [[
-      SELECT domain FROM domains WHERE owner = :owner;
+      SELECT handle FROM handles WHERE owner = :owner;
     ]]
 
         if not stmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_domains({
+        stmt:bind_handles({
             owner = data.owner
         })
 
         local rows = query(stmt)
         Handlers.utils.reply(json.encode(rows))(msg)
-        print('GetDomains Done!')
+        print('GetHandles Done!')
     end
 )
 
@@ -75,15 +75,15 @@ Handlers.add(
         local data = json.decode(msg.Data)
 
         local stmt = DB:prepare [[
-      REPLACE INTO domains (domain, pid, owner) VALUES (:domain, :pid, :owner);
+      REPLACE INTO handles (handle, pid, owner) VALUES (:handle, :pid, :owner);
     ]]
 
         if not stmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_domains({
-            domain = data.domain,
+        stmt:bind_handles({
+            handle = data.handle,
             pid = data.pid,
             owner = msg.From
         })
@@ -102,14 +102,14 @@ Handlers.add(
         local data = json.decode(msg.Data)
 
         local checkStmt = DB:prepare [[
-      SELECT owner FROM domains WHERE domain = :domain;
+      SELECT owner FROM handles WHERE handle = :handle;
     ]]
 
         if not checkStmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        checkStmt:bind_domains({ domain = data.domain })
+        checkStmt:bind_handles({ handle = data.handle })
         local rows = query(checkStmt)
 
         if #rows == 0 or rows[1].owner ~= msg.From then
@@ -119,15 +119,15 @@ Handlers.add(
         end
 
         local stmt = DB:prepare [[
-      DELETE FROM domains WHERE domain = :domain AND owner = :owner;
+      DELETE FROM handles WHERE handle = :handle AND owner = :owner;
     ]]
 
         if not stmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        stmt:bind_domains({
-            domain = data.domain,
+        stmt:bind_handles({
+            handle = data.handle,
             owner = data.owner
         })
 
