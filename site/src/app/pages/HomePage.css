@@ -182,24 +182,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 70px;
   text-align: center;
-  font-size: 25px;
   margin-top: 200px;
+}
+
+.home-page-slug {
+  line-height: 60px;
+  font-size: 45px;
+  margin: 60px 0;
+  padding: 0 50px;
 }
 
 .home-page-title {
   font-size: 20px;
   color: gray;
-  line-height: 30px;
   margin-right: 235px;
   margin-top: 50px;
+}
+
+.home-page-signup-row {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
 }
 
 .home-page-did-title {
   font-size: 20px;
   color: gray;
-  line-height: 40px;
+  line-height: 30px;
   margin-top: 50px;
   border-top: 1px solid lightgray;
   padding-top: 10px;
@@ -208,8 +218,8 @@
 
 .home-page-did-container {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  /* grid-template-rows: repeat(2, auto); */
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, auto);
   grid-gap: 10px;
 }
 
@@ -222,13 +232,13 @@
   color: white;
   cursor: pointer;
   font-size: 18px;
-  line-height: 50px;
+  height: 50px;
   border-radius: 5px;
   background-color: var(--section-header-color);
 }
 
 .home-page-input {
-  font-size: 22px;
+  font-size: 20px;
   margin-right: 20px;
   height: 45px;
 }

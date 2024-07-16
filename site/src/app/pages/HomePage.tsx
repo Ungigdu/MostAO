@@ -1,31 +1,25 @@
 import React from 'react';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { checkContent, connectWallet, getWalletAddress, isLoggedIn, timeOfNow, uuid, randomAvatar, getProfile, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
+import { connectWallet, getWalletAddress, isLoggedIn, uuid, randomAvatar, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
 import { HANDLE_REGISTRY } from '../util/consts';
+import AlertModal from '../modals/AlertModal';
 
 declare var window: any;
 
 interface HomePageState {
-  posts: any;
   avatar: string;
   nickname: string;
   question: string;
   alert: string;
   message: string;
   loading: boolean;
-  loadNextPage: boolean;
-  // loadAvatar: boolean;
-  range: string;
   isLoggedIn: string;
   address: string;
   process: string;
-  newPosts: number;
-  openEditProfile: boolean;
-  profile: any;
   handles: any;
   handleName: any;
   bSignup: boolean;
@@ -40,21 +34,15 @@ class HomePage extends React.Component<{}, HomePageState> {
   constructor(props: {}) {
     super(props);
     this.state = {
-      posts: [],
       avatar: '',
       nickname: '',
       question: '',
       alert: '',
       message: '',
       loading: true,
-      loadNextPage: false,
-      range: 'everyone',
       isLoggedIn: '',
       address: '',
       process: '',
-      newPosts: 0,
-      openEditProfile: false,
-      profile: '',
       handles: [],
       handleName: '',
       bSignup: false,
@@ -77,24 +65,25 @@ class HomePage extends React.Component<{}, HomePageState> {
 
   async start() {
     let address = await isLoggedIn();
-    this.setState({ isLoggedIn: address, address });
+    this.setState({ loading: false, isLoggedIn: address, address });
 
     // FOR TEST
     if (address) this.getUserHandles(address);
   }
 
   async getUserHandles(address: string) {
+    this.setState({ loading: true });
+
     try {
       // get the user's handles
       let response: Array<{ handle: string}> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { "owner": address });
       console.log("response:", JSON.stringify(response));
   
       const handles = response.map(item => item.handle);
-
-    this.setState({ handles });
+      this.setState({ handles, loading: false });
     } catch (error) {
       console.error("Error fetching handles:", error);
-      this.setState({ handles: [] }); // Set to empty array in case of error
+      this.setState({ handles: [], loading: false }); // Set to empty array in case of error
     }
   }
   async connectWallet() {
@@ -105,8 +94,7 @@ class HomePage extends React.Component<{}, HomePageState> {
 
       this.setState({ isLoggedIn: 'true', address });
 
-      // FOR TEST
-      // this.getUserHandles();
+      this.getUserHandles(address);
 
       // TODO: should check to if is exist of profile
       // if (await this.getProfile() == false)
@@ -138,8 +126,11 @@ class HomePage extends React.Component<{}, HomePageState> {
   // This is a temp way, need to search varibale Members
   // to keep one, on browser side or AOS side (in lua code)
   async register(handleName: string) {
-    // let nickname = address.substring(0, 4) + '...' + address.substring(address.length - 4);
-    // let data = { address, avatar: randomAvatar(), banner: '', nickname, bio: '', time: timeOfNow() };
+    if (!handleName.trim()) {
+      this.setState({ alert: 'Please input a valid handle.' });
+      return;
+    }
+
     let new_process = await spawnProcess();
     console.log("Spawn --> new_process:", new_process)
     messageToAO(HANDLE_REGISTRY, {"handle": handleName, "pid": new_process}, 'Register');
@@ -176,6 +167,8 @@ class HomePage extends React.Component<{}, HomePageState> {
 
     for (let i = 0; i < this.state.handles.length; i++) {
       let handle = this.state.handles[i];
+      if (!handle) continue; // handle is empty string, will be removed.
+
       divs.push(
         <div key={i} className='home-page-did' onClick={() => this.pickHandle(handle)}>
           <img
@@ -212,7 +205,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     return (
       <div>
         <div className='home-page-title'>Sign up a new handle</div>
-        <div>
+        <div className='home-page-signup-row'>
           <input
             className="home-page-input"
             placeholder="Handle name"
@@ -225,17 +218,27 @@ class HomePage extends React.Component<{}, HomePageState> {
             Sign Up
           </button>
         </div>
+
+        <AlertModal message={this.state.alert} button="OK" onClose={() => this.setState({ alert: '' })} />
       </div>
     )
   }
 
   render() {
-    if (!this.state.isLoggedIn) {
+    if (this.state.loading) {
+      return (
+        <div className='home-page-welcome'>
+          {this.renderHeader()}
+          <Loading marginTop='50px' />
+        </div>
+      )
+    }
+    else if (!this.state.isLoggedIn) {
       // Connect to a wallet
       return (
         <div className='home-page-welcome'>
           {this.renderHeader()}
-          <h1>Messages and other stuff transmitted by AO</h1>
+          <div className="home-page-slug">Messages and other stuff transmitted by AO</div>
           <button className="home-connect-button" onClick={() => this.connectWallet()}>
             Connect ArConnect
           </button>
