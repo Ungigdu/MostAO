@@ -1,5 +1,5 @@
 import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnect/browser";
-import { AO_TWITTER, ARWEAVE_GATEWAY, MODULE, SCHEDULER, regexPatterns } from "./consts";
+import { AO_TWITTER, ARWEAVE_GATEWAY, MODULE, SCHEDULER, WASM64_MODULE, regexPatterns } from "./consts";
 import { Server } from "../../server/server";
 import { createAvatar } from '@dicebear/core';
 import { micah } from '@dicebear/collection';
@@ -419,10 +419,10 @@ export function timeOfNow() {
 export async function spawnProcess() {
   try {
     const processId = await spawn({
-      module: MODULE,
+      module: WASM64_MODULE,
       scheduler: SCHEDULER,
       signer: createDataItemSigner(window.arweaveWallet),
-      tags: [{ name: 'Name', value: 'personal-life-app' }]
+      tags: [{ name: 'Name', value: 'MostAO-Handle' }]
     });
 
     return processId;
@@ -492,8 +492,8 @@ export async function getDataFromAO(
     return '';
   }
 
-  // console.log('action', action);
-  // console.log('result', result);
+  console.log('action', action);
+  console.log('result', result);
 
   let resp = result.Messages[0].Data;
 
