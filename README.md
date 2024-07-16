@@ -8,10 +8,9 @@ AO, the computer, is a promising new infrastructure that enables Web3 applicatio
 
 ## Conceptes
 
-- Avatar: processes living on AO who serves as the agents of users. A user will chat and do other stuffs via an avatar
-- Handle: A handle is the unique identifier of an avatar
-- Session: A session is process establish between two avatars. A session is responsible for keeping the message history and key exchange
-- Router: spawn and keep records of all sessions 
+- Handle: A handle is the unique identifier, and is also a process that can send and receive messages.
+- Session: A session is process establish between two handles. A session is responsible for keeping the message history and key exchange
+- Registry: Register all handles and spawns sessions between handles.
 
 ## Handle Registry
 
@@ -21,7 +20,7 @@ Every process in MOSTAO has a (social)handle as its unique identifier. The handl
 
 Returns the process id which is currently the owner and pid of this handle.
 
-```lua
+```
 dryrun({
   Target = "{Registry Process ID}",
   Data = "{name}",
@@ -35,7 +34,7 @@ dryrun({
 
 Return the handles under this owner (wallet address)
 
-```lua
+```
 dryrun({
   Target = "{Registry Process ID}",
   Data = "{owner}",
@@ -45,17 +44,14 @@ dryrun({
 })
 ```
 
-### Register(name, pid)
+### Register(name)
 
-Register a handle name, with PID as the avatar user and an owner who can reassign this handle.
+Register a handle name, spawn a handle process with this name in it
 
-```lua
+```
 send({
   Target = "{Handle Process ID}",
-  Data = {
-   name = "{name}",
-   pid = "{pid}"
-  },
+  Data = "{name}",
   Tags = {
     Action = "Register"
   }
@@ -66,7 +62,7 @@ send({
 
 Renounce a handle, set it free. Can only be called by current owner
 
-```lua
+```
 send({
   Target = "{Registry Process ID}",
   Data = {
@@ -78,9 +74,183 @@ send({
 })
 ```
 
-## Avatar
+### QuerySession(handleA, handleB)
 
-An avatar is a spawned process that act as an agent for a user. An avatar should bind to a handle for the users in this protocol to find each other.
-An avatar has those functions:
+Return session id if there exists a session between handleA and handleB (order does not matter), otherwise return nil.
+
+```
+dryrun({
+  Target = "{Registry Process ID}",
+  Data = "{handleA, handleB}",
+  Tags = {
+    Action = "QuerySession"
+  }
+})
+```
+
+### EstablishSession(otherHandle)
+
+This function can only be called by a handle process. It will spawn a session process between the caller and the counterpart.
+
+```
+send({
+  Target = "{Registry Process ID}",
+  Data = "{otherHandle}",
+  Tags = {
+    Action = "EstablishSession"
+  }
+})
+```
+
+## Handle
+
+A handle process acts as an agent for a user. Handle has those functions:
+
 1. keep a profile along with env variables
-2. keep records of session ids between this avatar and others (avatar or g)
+2. keep chat list
+3. send and receive messages
+
+The activities of the handle process is as follows:
+
+### ProfileUpdate(profile)
+
+Update the profile of this handle, the structure of profile data is as follows:
+
+```
+{
+  name: <string>,
+  img: <url>, //profile picture,
+  banner: <url>,
+  bio: <string>,
+  pubkey: <string>,
+  ...other fields
+}
+```
+
+```
+send({
+  Target = "{Handle Process ID}",
+  Data = "{profile}",
+  Tags = {
+    Action = "ProfileUpdate"
+  }
+})
+```
+
+### RelayMessage(content)
+
+Send encrypted message from user (user's wallet) to handle. (Then the handle will send the content to session process)
+
+```
+send({
+  Target = "{Session Process ID}",
+  Data = "{content}",
+  Tags = {
+    Action = "SendMessage"
+  }
+})
+```
+
+### Notify(data?)
+
+Whenever a handle sends a message to session process, the session process will notify the conterpart of incoming message by sending a notification to it. This can only be called by session process. The data is optional for now.
+
+```
+send({
+  Target = "{Handle Process ID}",
+  Data = "{data}",
+  Tags = {
+    Action = "Notify"
+  }
+})
+```
+
+
+## Session
+
+A session is a process establish between to processes and it can only be called by those two processes. A session is responsible for session key management, keeping chat history. This is a workflow of encrypted DM between handleA (owned by userA) and handleB (owned by userB):
+
+1. userA generates a session key (SK) in its local environment, outside of AO
+2. userA encrypts the SK by its own pubkey and gets SK_EA in its local environment
+3. userA encrypts the SK by userB's pubkey and gets SK_EB in its local environment
+4. handleA sends SK_EA and SK_EB to session process
+5. userA encrypts a messgae using SK, gets MSG_E
+6. handleA send MSG_E to session process
+7. session process sends a notification to handleB
+8. when handleB is online, it checks the SK_EB and MSG_E, using userB's private key, it can decrypt SK then the MSG
+
+The activities of the session process is as follows:
+
+### RotateSessionKey({SK_EA, pubkey_A},{SK_EB, pubkey_B})
+
+Update session key, can be called by either handle. All handles should be kept in an array. The lens of array can be seen as generation number
+
+```
+send({
+  Target = "{Session Process ID}",
+  Data = "{SK_EA, pubkey_A},{SK_EB, pubkey_B}",
+  Tags = {
+    Action = "RotateSessionKey"
+  }
+})
+```
+
+### GetCurrentKeys()
+
+get current session key with key generation
+
+```
+dryrun({
+  Target = "{Session Process ID}",
+  Tags = {
+    Action = "GetCurrentKey"
+  }
+})
+```
+
+### GetKeyByGeneration(generation)
+
+get key by generation number
+
+```
+dryrun({
+  Target = "{Session Process ID}",
+  Data = "generation",
+  Tags = {
+    Action = "GetKeyByGeneration"
+  }
+})
+```
+
+### SendMessage(content)
+
+Send encrypted message to session process. The session will keep the message's from, pubkey, generation, timestamp with the content.
+```
+send({
+  Target = "{Session Process ID}",
+  Data = "{content}",
+  Tags = {
+    Action = "SendMessage"
+  }
+})
+```
+
+### QueryMessage(from, until, limit, order)
+
+Query encrypted messages, with from as start time, until as end time, limit as numbers you want to get and order as asc desc (in time)
+
+```
+dryrun({
+  Target = "{Session Process ID}",
+  Data = "{
+    from: "{from}",
+    until: "{until}",
+    limit: "{limit}",
+    order: "{order}"
+  }",
+  Tags = {
+    Action = "QueryMessage"
+  }
+})
+```
+
