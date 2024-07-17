@@ -1,6 +1,46 @@
 local json = require("json")
 local sqlite3 = require("lsqlite3")
 local SQLITE_WASM64_MODULE = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"
+local HANDLE_LUA_CODE = [[
+local json = require("json")
+local profiles = {}
+
+Handlers.add(
+    "ProfileUpdate",
+    Handlers.utils.hasMatchingTag("Action", "ProfileUpdate"),
+    function(msg)
+        local data = json.decode(msg.Data)
+
+        print("ao.env.Process.Owner: " .. ao.env.Process.Owner)
+        print("msg.From: " .. msg.From)
+        -- if ao.env.Tags['MostAO-Handle-Owner'] ~= msg.From then
+        --     print('Unauthorized attempt to update profile')
+        --     Handlers.utils.reply(json.encode({ status = "error", message = "Unauthorized" ,owner = ao.env.Process.Owner, msgFrom = msg.From}))(msg)
+        --     return
+        -- end
+
+        -- Update profile information
+        profiles = {
+            name = data.name,
+            img = data.img,
+            banner = data.banner,
+            bio = data.bio,
+            pubkey = data.pubkey,
+        }
+
+        print('ProfileUpdate Done!')
+        Handlers.utils.reply(json.encode({ status = "success" }))(msg)
+    end
+)
+
+Handlers.add(
+    "GetProfile",
+    Handlers.utils.hasMatchingTag("Action", "GetProfile"),
+    function(msg)
+        Handlers.utils.reply(json.encode(profiles))(msg)
+    end
+)
+]]
 DB = DB or sqlite3.open_memory()
 
 DB:exec [[
@@ -116,6 +156,10 @@ Handlers.add(
             pid = pid,
             owner = owner
         })
+        local result = ao.send({
+            Target = pid,
+            Action = "Eval",
+            Data = HANDLE_LUA_CODE
         })
         print("result: " .. json.encode(result))
         stmt:step()
