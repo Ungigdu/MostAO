@@ -1,6 +1,6 @@
 local json = require("json")
 local sqlite3 = require("lsqlite3")
-
+local SQLITE_WASM64_MODULE = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"
 DB = DB or sqlite3.open_memory()
 
 DB:exec [[
@@ -54,7 +54,7 @@ Handlers.add(
         local data = json.decode(msg.Data)
 
         local stmt = DB:prepare [[
-      SELECT handle FROM handles WHERE owner = :owner;
+      SELECT handle, pid FROM handles WHERE owner = :owner;
     ]]
 
         if not stmt then
@@ -80,8 +80,29 @@ Handlers.add(
         local data = json.decode(msg.Data)
 
         print('Registering handle: ' .. data.handle)
-        print('PID: ' .. data.pid)
+        -- print('PID: ' .. data.pid)
         print('Owner: ' .. msg.From)
+        local spawnMessage = {
+            Tags = {
+                { name = "MostAO-Handle-Name",  value = data.handle },
+                { name = "MostAO-Handle-Owner", value = msg.From },
+                { name = "Name",                value = "MostAO-Handle" }
+            }
+        }
+        local result = ao.spawn(SQLITE_WASM64_MODULE, spawnMessage)
+    end
+)
+
+Handlers.add(
+    "Spawned",
+    Handlers.utils.hasMatchingTag("Action", "Spawned"),
+    function(msg)
+        local pid = msg.Tags.Process
+        local owner = msg.Tags["MostAO-Handle-Owner"]
+        local handle = msg.Tags["MostAO-Handle-Name"]
+
+        print('Spawned Done!')
+
         local stmt = DB:prepare [[
       REPLACE INTO handles (handle, pid, owner) VALUES (:handle, :pid, :owner);
     ]]
@@ -91,15 +112,15 @@ Handlers.add(
         end
 
         stmt:bind_names({
-            handle = data.handle,
-            pid = data.pid,
-            owner = msg.From
+            handle = handle,
+            pid = pid,
+            owner = owner
         })
-
+        })
+        print("result: " .. json.encode(result))
         stmt:step()
         stmt:reset()
-        print('Register Done!')
-        Handlers.utils.reply(json.encode({ status = "success" }))(msg)
+        Handlers.utils.reply("Handle Spawn Success")(msg)
     end
 )
 
