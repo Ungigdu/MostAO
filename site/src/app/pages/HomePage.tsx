@@ -131,9 +131,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       return;
     }
 
-    let new_process = await spawnProcess();
-    console.log("Spawn --> new_process:", new_process)
-    messageToAO(HANDLE_REGISTRY, {"handle": handleName, "pid": new_process}, 'Register');
+    messageToAO(HANDLE_REGISTRY, {"handle": handleName }, 'Register');
   }
 
   async disconnectWallet() {
