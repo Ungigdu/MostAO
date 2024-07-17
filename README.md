@@ -20,7 +20,7 @@ Every process in MOSTAO has a (social)handle as its unique identifier. The handl
 
 Returns the process id which is currently the owner and pid of this handle.
 
-```
+```ts
 dryrun({
   Target = "{Registry Process ID}",
   Data = "{name}",
@@ -34,7 +34,7 @@ dryrun({
 
 Return the handles under this owner (wallet address)
 
-```
+```ts
 dryrun({
   Target = "{Registry Process ID}",
   Data = "{owner}",
@@ -48,7 +48,7 @@ dryrun({
 
 Register a handle name, spawn a handle process with this name in it
 
-```
+```ts
 send({
   Target = "{Handle Process ID}",
   Data = "{name}",
@@ -62,7 +62,7 @@ send({
 
 Renounce a handle, set it free. Can only be called by current owner
 
-```
+```ts
 send({
   Target = "{Registry Process ID}",
   Data = {
@@ -78,7 +78,7 @@ send({
 
 Return session id if there exists a session between handleA and handleB (order does not matter), otherwise return nil.
 
-```
+```ts
 dryrun({
   Target = "{Registry Process ID}",
   Data = "{handleA, handleB}",
@@ -92,7 +92,7 @@ dryrun({
 
 This function can only be called by a handle process. It will spawn a session process between the caller and the counterpart.
 
-```
+```ts
 send({
   Target = "{Registry Process ID}",
   Data = "{otherHandle}",
@@ -116,7 +116,7 @@ The activities of the handle process is as follows:
 
 Update the profile of this handle, the structure of profile data is as follows:
 
-```
+```ts
 {
   name: <string>,
   img: <url>, //profile picture,
@@ -127,7 +127,7 @@ Update the profile of this handle, the structure of profile data is as follows:
 }
 ```
 
-```
+```ts
 send({
   Target = "{Handle Process ID}",
   Data = "{profile}",
@@ -137,11 +137,25 @@ send({
 })
 ```
 
+### GetProfile()
+
+Retrieve the profile of this handle.
+
+```ts
+send({
+  Target = "{Handle Process ID}",
+  Tags = {
+    Action = "GetProfile"
+  }
+})
+
+```
+
 ### RelayMessage(content)
 
 Send encrypted message from user (user's wallet) to handle. (Then the handle will send the content to session process)
 
-```
+```ts
 send({
   Target = "{Session Process ID}",
   Data = "{content}",
@@ -155,7 +169,7 @@ send({
 
 Whenever a handle sends a message to session process, the session process will notify the conterpart of incoming message by sending a notification to it. This can only be called by session process. The data is optional for now.
 
-```
+```ts
 send({
   Target = "{Handle Process ID}",
   Data = "{data}",
@@ -164,7 +178,6 @@ send({
   }
 })
 ```
-
 
 ## Session
 
@@ -185,7 +198,7 @@ The activities of the session process is as follows:
 
 Update session key, can be called by either handle. All handles should be kept in an array. The lens of array can be seen as generation number
 
-```
+```ts
 send({
   Target = "{Session Process ID}",
   Data = "{SK_EA, pubkey_A},{SK_EB, pubkey_B}",
@@ -199,7 +212,7 @@ send({
 
 get current session key with key generation
 
-```
+```ts
 dryrun({
   Target = "{Session Process ID}",
   Tags = {
@@ -212,7 +225,7 @@ dryrun({
 
 get key by generation number
 
-```
+```ts
 dryrun({
   Target = "{Session Process ID}",
   Data = "generation",
@@ -225,7 +238,8 @@ dryrun({
 ### SendMessage(content)
 
 Send encrypted message to session process. The session will keep the message's from, pubkey, generation, timestamp with the content.
-```
+
+```ts
 send({
   Target = "{Session Process ID}",
   Data = "{content}",
@@ -239,7 +253,7 @@ send({
 
 Query encrypted messages, with from as start time, until as end time, limit as numbers you want to get and order as asc desc (in time)
 
-```
+```ts
 dryrun({
   Target = "{Session Process ID}",
   Data = "{
@@ -253,4 +267,3 @@ dryrun({
   }
 })
 ```
-
