@@ -10,6 +10,11 @@ import AlertModal from '../modals/AlertModal';
 
 declare var window: any;
 
+interface HandleInfo {
+  handle: string;
+  pid: string;
+}
+
 interface HomePageState {
   avatar: string;
   nickname: string;
@@ -75,11 +80,10 @@ class HomePage extends React.Component<{}, HomePageState> {
     this.setState({ loading: true });
 
     try {
-      // get the user's handles
-      let response: Array<{ handle: string}> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { "owner": address });
+      let response: Array<{ handle: string; pid: string }> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
       console.log("response:", JSON.stringify(response));
-  
-      const handles = response.map(item => item.handle);
+
+      const handles: HandleInfo[] = response.map(item => ({ handle: item.handle, pid: item.pid }));
       this.setState({ handles, loading: false });
     } catch (error) {
       console.error("Error fetching handles:", error);
@@ -175,7 +179,7 @@ class HomePage extends React.Component<{}, HomePageState> {
           />
 
           <div key={uuid()} className="home-page-nickname">
-            {handle}
+            @{handle.handle}
           </div>
         </div>
       )
