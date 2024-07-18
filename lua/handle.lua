@@ -7,12 +7,17 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        print("ao.env.Process.Owner: " .. ao.env.Process.Owner)
-        -- if ao.env.Process.Owner ~= msg.From then
-        --     print('Unauthorized attempt to update profile')
-        --     Handlers.utils.reply(json.encode({ status = "error", message = "Unauthorized" ,owner = ao.env.Process.Owner, msgFrom = msg.From}))(msg)
-        --     return
-        -- end
+        if ao.env.Process.Tags["MostAO-Handle-Owner"] ~= msg.From then
+            print('Unauthorized attempt to update profile')
+            Handlers.utils.reply(json.encode({
+                status = "error",
+                message = "Unauthorized",
+                owner = ao.env.Process.Tags["MostAO-Handle-Owner"],
+                msgFrom =
+                    msg.From
+            }))(msg)
+            return
+        end
 
         profiles = {
             name = data.name,
@@ -34,4 +39,3 @@ Handlers.add(
         Handlers.utils.reply(json.encode(profiles))(msg)
     end
 )
-
