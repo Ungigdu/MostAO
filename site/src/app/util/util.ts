@@ -661,9 +661,10 @@ export async function transferToken(from: string, to: string, qty: string, targe
   return messageId;
 }
 
-export function randomAvatar() {
+export function generateAvatar(seed?: string) {
+  const avatarSeed = seed || uuid();
   const resp = createAvatar(micah, {
-    seed: uuid(),
+    seed: avatarSeed,
   });
   return resp.toDataUriSync();
 }

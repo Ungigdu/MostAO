@@ -1,7 +1,7 @@
 import React from 'react';
 import { BsFillXCircleFill } from 'react-icons/bs';
 import { Server } from '../../server/server';
-import { messageToAO, randomAvatar, uuid } from '../util/util';
+import { messageToAO, generateAvatar, uuid } from '../util/util';
 import './Modal.css'
 import './EditProfileModal.css'
 import MessageModal from './MessageModal';
@@ -231,7 +231,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
               <img className="edit-profile-banner" 
               src={this.state.banner ? this.state.banner : './banner-default.png'} />
               <img className="edit-profile-portrait" 
-              src={this.state.avatar ? this.state.avatar : randomAvatar()} 
+              src={this.state.avatar ? this.state.avatar : generateAvatar()} 
               onClick={() => this.selectImage(false)} />
               {/* <BsCamera className="edit-profile-camera" onClick={() => this.selectImage(false)} /> */}
 

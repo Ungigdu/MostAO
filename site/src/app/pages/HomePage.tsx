@@ -1,7 +1,7 @@
 import React from 'react';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, randomAvatar, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
+import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
@@ -175,7 +175,7 @@ class HomePage extends React.Component<{}, HomePageState> {
         <div key={i} className='home-page-did' onClick={() => this.pickHandle(handle)}>
           <img
             className='home-page-portrait'
-            src={randomAvatar()}
+            src={generateAvatar(handle.pid)}
           />
 
           <div key={uuid()} className="home-page-nickname">
