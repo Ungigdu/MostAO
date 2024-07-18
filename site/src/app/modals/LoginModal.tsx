@@ -5,7 +5,7 @@ import './Modal.css'
 import './LoginModal.css'
 import MessageModal from './MessageModal';
 
-declare var window: any;
+declare let window: any;
 
 interface LoginModalProps {
   open: boolean;
@@ -18,7 +18,7 @@ interface LoginModalState {
 }
 
 class LoginModal extends React.Component<LoginModalProps, LoginModalState> {
-  constructor(props:LoginModalProps) {
+  constructor(props: LoginModalProps) {
     super(props);
 
     this.state = {
@@ -26,9 +26,9 @@ class LoginModal extends React.Component<LoginModalProps, LoginModalState> {
       alert: '',
     }
   }
-  
+
   render() {
-    if(!this.props.open)
+    if (!this.props.open)
       return (<div></div>);
 
     return (
@@ -39,19 +39,19 @@ class LoginModal extends React.Component<LoginModalProps, LoginModalState> {
           </button>
 
           <div className='login-modal-button-mm'>
-            <img className="login-modal-icon" src='/icon/mm.png' /> 
+            <img className="login-modal-icon" src='/icon/mm.png' />
             {/* <button style={{width: '170px'}} onClick={()=>this.onMetamask()}>Meta Mask</button> */}
           </div>
-          <br/>
+          <br />
 
           <div className='login-modal-button-wc'>
-            <img className="login-modal-icon" src='/icon/wc.png' /> 
+            <img className="login-modal-icon" src='/icon/wc.png' />
             {/* <button style={{width: '170px'}} onClick={()=>this.onWallectConnect()}>Wallet Connect</button> */}
           </div>
         </div>
 
         <MessageModal message={this.state.message} />
-        <AlertModal message={this.state.alert} button="OK" onClose={()=>this.setState({alert: ''})}/>
+        <AlertModal message={this.state.alert} button="OK" onClose={() => this.setState({ alert: '' })} />
       </div>
     )
   }

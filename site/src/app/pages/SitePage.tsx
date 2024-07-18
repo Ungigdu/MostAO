@@ -2,7 +2,8 @@ import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   BsAward, BsBell, BsBookmark, BsChatText, BsController, BsHouse,
-  BsPerson} from 'react-icons/bs';
+  BsPerson
+} from 'react-icons/bs';
 import {
   getDataFromAO, getDefaultProcess,
   getTokenBalance, isLoggedIn,
@@ -42,7 +43,7 @@ class SitePage extends React.Component<{}, SitePageState> {
     this.onClose = this.onClose.bind(this);
 
     subscribe('wallet-events', () => {
-      let address = Server.service.isLoggedIn();
+      const address = Server.service.isLoggedIn();
       this.setState({ address })
     });
   }
@@ -52,39 +53,39 @@ class SitePage extends React.Component<{}, SitePageState> {
   }
 
   async start() {
-    let address = await isLoggedIn();
+    const address = await isLoggedIn();
     // console.log("site page -> address:", address)
 
     Server.service.setIsLoggedIn(address);
     Server.service.setActiveAddress(address);
     this.setState({ address })
 
-    let process = await getDefaultProcess(address);
+    const process = await getDefaultProcess(address);
     Server.service.setDefaultProcess(process);
 
-    let bal_cred = await getTokenBalance(CRED, process);
+    const bal_cred = await getTokenBalance(CRED, process);
     // bal_cred = formatBalance(bal_cred, 3);
     // console.log("bal_cred:", bal_cred)
     Server.service.setBalanceOfCRED(bal_cred);
 
-    let bal_aot = await getTokenBalance(AOT_TEST, process);
+    const bal_aot = await getTokenBalance(AOT_TEST, process);
     // console.log("bal_aot:", bal_aot)
     Server.service.setBalanceOfAOT(bal_aot);
 
-    let bal_trunk = await getTokenBalance(TRUNK, process);
+    const bal_trunk = await getTokenBalance(TRUNK, process);
     // bal_trunk = formatBalance(bal_trunk, 3);
     // console.log("bal_trunk:", bal_trunk)
     Server.service.setBalanceOfTRUNK(bal_trunk);
 
-    let bal_war = await getTokenBalance(WAR, process);
+    const bal_war = await getTokenBalance(WAR, process);
     // console.log("bal_war:", bal_war)
     Server.service.setBalanceOfWAR(bal_war / AR_DEC);
 
-    let bal_0rbit = await getTokenBalance(ORBT, process);
+    const bal_0rbit = await getTokenBalance(ORBT, process);
     // console.log("bal_0rbit:", bal_0rbit)
     Server.service.setBalanceOf0rbit(bal_0rbit / AR_DEC);
 
-    let bal_usda = await getTokenBalance(USDA, process);
+    const bal_usda = await getTokenBalance(USDA, process);
     // console.log("bal_usda:", bal_usda)
     Server.service.setBalanceOfUSDA(bal_usda / AR_DEC);
 

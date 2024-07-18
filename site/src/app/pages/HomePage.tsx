@@ -8,7 +8,7 @@ import Loading from '../elements/Loading';
 import { HANDLE_REGISTRY } from '../util/consts';
 import AlertModal from '../modals/AlertModal';
 
-declare var window: any;
+declare let window: any;
 
 interface HandleInfo {
   handle: string;
@@ -25,7 +25,7 @@ interface HomePageState {
   isLoggedIn: string;
   address: string;
   process: string;
-  handles: any;
+  handles: HandleInfo[];
   handleName: any;
   bSignup: boolean;
 }
@@ -69,7 +69,7 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   async start() {
-    let address = await isLoggedIn();
+    const address = await isLoggedIn();
     this.setState({ loading: false, isLoggedIn: address, address });
 
     // FOR TEST
@@ -80,7 +80,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     this.setState({ loading: true });
 
     try {
-      let response: Array<{ handle: string; pid: string }> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
+      const response: Array<{ handle: string; pid: string }> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
       console.log("response:", JSON.stringify(response));
 
       const handles: HandleInfo[] = response.map(item => ({ handle: item.handle, pid: item.pid }));
@@ -91,9 +91,9 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
   }
   async connectWallet() {
-    let connected = await connectWallet();
+    const connected = await connectWallet();
     if (connected) {
-      let address = await getWalletAddress();
+      const address = await getWalletAddress();
       console.log("address:", address)
 
       this.setState({ isLoggedIn: 'true', address });
@@ -135,7 +135,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       return;
     }
 
-    messageToAO(HANDLE_REGISTRY, {"handle": handleName }, 'Register');
+    messageToAO(HANDLE_REGISTRY, { "handle": handleName }, 'Register');
   }
 
   async disconnectWallet() {
@@ -165,10 +165,10 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   renderDID() {
-    let divs = [];
+    const divs = [];
 
     for (let i = 0; i < this.state.handles.length; i++) {
-      let handle = this.state.handles[i];
+      const handle = this.state.handles[i];
       if (!handle) continue; // handle is empty string, will be removed.
 
       divs.push(

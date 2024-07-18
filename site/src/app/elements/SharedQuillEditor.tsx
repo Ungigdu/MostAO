@@ -11,12 +11,12 @@ const BlockEmbed = Quill.import('blots/block/embed');
 
 class AudioBlot extends BlockEmbed {
   static create(url: any) {
-    let node = super.create();
+    const node = super.create();
     node.setAttribute('src', url);
     node.setAttribute('controls', '');
     return node;
   }
-  
+
   static value(node: any) {
     return node.getAttribute('src');
   }
@@ -68,7 +68,7 @@ class SharedQuillEditor extends React.Component<SharedQuillEditorProps, SharedQu
     this.onQuillImage = this.onQuillImage.bind(this);
   }
 
-  componentDidMount() { 
+  componentDidMount() {
     this.attachQuillRefs();
   }
 
@@ -78,45 +78,45 @@ class SharedQuillEditor extends React.Component<SharedQuillEditorProps, SharedQu
 
     // Skip if Quill reference is defined:
     if (this.quillRef != null) return;
-    
+
     const quillRef = this.reactQuillRef.getEditor();
     if (quillRef != null) {
       this.quillRef = quillRef;
       this.props.getRef(quillRef);
-    } 
+    }
   }
 
   onContentChange(value: any) {
-    this.setState({content: value});
+    this.setState({ content: value });
 
     if (this.props.onChange) {
       let text = this.quillRef.getText().trim().replaceAll(' ', '');
-      text     = text.replace(/[\r\n]/g, ''); // remove \n (enter)
+      text = text.replace(/[\r\n]/g, ''); // remove \n (enter)
       this.props.onChange(text.length);
     }
   };
 
   onContentChangeSelection() {
-    let range = this.quillRef.getSelection();
+    const range = this.quillRef.getSelection();
     if (range) {
       this.quillPosition = range.index;
     }
   };
 
   onQuillImage() {
-    this.setState({openAddMedia: true});
+    this.setState({ openAddMedia: true });
   }
 
   onInsertMedia(data: any) {
-    this.setState({openAddMedia: false});
+    this.setState({ openAddMedia: false });
     this.quillRef.insertEmbed(this.quillPosition, data.category, data.url);
   }
 
   setQuill() {
-    let container = [
-      this.props.hasFontSize && {'header': [1, 2, 3, false]},
+    const container = [
+      this.props.hasFontSize && { 'header': [1, 2, 3, false] },
       'bold', 'italic', 'underline', 'strike',
-      {'align': ''}, {'align': 'center'}, {'align': 'right'},
+      { 'align': '' }, { 'align': 'center' }, { 'align': 'right' },
       'link', 'image', 'video'
     ];
 
@@ -135,7 +135,7 @@ class SharedQuillEditor extends React.Component<SharedQuillEditorProps, SharedQu
         container: [container]
       }
     };
-    
+
     // if (this.props.isActivity)
     //   this.quillModules = {toolbar: null};
 

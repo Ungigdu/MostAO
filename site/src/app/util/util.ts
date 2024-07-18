@@ -5,7 +5,7 @@ import { createAvatar } from '@dicebear/core';
 import { micah } from '@dicebear/collection';
 import * as Othent from "@othent/kms";
 
-declare var window: any;
+declare let window: any;
 
 /**
  * check the input if is a valid number
@@ -33,8 +33,8 @@ export function formatTimestamp(time: number, ago?: boolean) {
   const m = new Map([[1, 'Jan'], [2, 'Feb'], [3, 'Mar'], [4, 'Apr'], [5, 'May'], [6, 'Jun'],
   [7, 'Jul'], [8, 'Aug'], [9, 'Sep'], [10, 'Oct'], [11, 'Nov'], [12, 'Dec']]);
 
-  let now = secondsOfNow();
-  let diff = now - time;
+  const now = secondsOfNow();
+  const diff = now - time;
 
   const days = Math.floor(diff / (60 * 60 * 24));
   const hours = Math.floor((diff % (60 * 60 * 24)) / (60 * 60));
@@ -139,10 +139,10 @@ export function numberWithCommas(x: number): string {
  */
 export function getMediaAmount(quillRef: any) {
   let mediaAmount = 0;
-  let html = quillRef.root.innerHTML;
-  let img = html.match(/<img/gi);
-  let iframe = html.match(/<iframe/gi);
-  let audio = html.match(/<audio/gi);
+  const html = quillRef.root.innerHTML;
+  const img = html.match(/<img/gi);
+  const iframe = html.match(/<iframe/gi);
+  const audio = html.match(/<audio/gi);
   mediaAmount += img && img.length;
   mediaAmount += iframe && iframe.length;
   mediaAmount += audio && audio.length;
@@ -247,7 +247,7 @@ export function convertUrlsOLD(str: string): string {
 }
 
 export function isValidUrl(url: string) {
-  var pattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w.-]*)*\/?$/;
+  const pattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w.-]*)*\/?$/;
   return pattern.test(url);
 }
 
@@ -258,14 +258,14 @@ export function isValidUrl(url: string) {
  */
 export function getFirstLine(str: any) {
   let text = '';
-  let start = str.indexOf('<p>');
+  const start = str.indexOf('<p>');
 
   if (start != -1) {
-    let end = str.indexOf('</p>', start);
+    const end = str.indexOf('</p>', start);
     if (end != -1)
       text = str.substring(start + 3, end);
 
-    let img = text.indexOf('<img');
+    const img = text.indexOf('<img');
     if (img != -1)
       text = text.substring(start, img);
   }
@@ -281,10 +281,10 @@ export function getFirstLine(str: any) {
  */
 export function getFirstImage(str: any) {
   let image = '';
-  let start = str.indexOf('<img');
+  const start = str.indexOf('<img');
 
   if (start != -1) {
-    let end = str.indexOf('>', start);
+    const end = str.indexOf('>', start);
     if (end != -1)
       image = str.substring(start + 10, end - 1);
   }
@@ -297,7 +297,7 @@ export function getFirstImage(str: any) {
  * @returns browserName
  */
 export function browserDetect() {
-  let userAgent = navigator.userAgent;
+  const userAgent = navigator.userAgent;
   let browserName;
 
   // Approach 1
@@ -366,18 +366,18 @@ export function browserDetect() {
 }
 
 export function getTimestamp(exDays: number, hour: number) {
-  let now = new Date(); // Date object for now
-  let year = now.getFullYear(); // Get the current year
-  let month = now.getMonth(); // Get the current month (note: the month starts from 0, and 0 means January)
-  let day = now.getDate(); // get current date
-  let result = new Date(year, month, day + exDays, hour, 0, 0); // Create a Date object at the hour of the specified day
+  const now = new Date(); // Date object for now
+  const year = now.getFullYear(); // Get the current year
+  const month = now.getMonth(); // Get the current month (note: the month starts from 0, and 0 means January)
+  const day = now.getDate(); // get current date
+  const result = new Date(year, month, day + exDays, hour, 0, 0); // Create a Date object at the hour of the specified day
 
   return result.getTime(); // Returns the timestamp (in milliseconds) at the hour of the specified day
 }
 
 export function checkContent(quillRef: any, wordCount: number) {
   let message = '';
-  let mediaAmount = getMediaAmount(quillRef);
+  const mediaAmount = getMediaAmount(quillRef);
   if (mediaAmount > 5)
     return 'Contains up to 5 media file.';
 
@@ -398,9 +398,9 @@ export function capitalizeFirstLetter(str: string) {
  * @returns the unique uuid
  */
 export function uuid() {
-  var str = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+  const str = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
   return str.replace(/[xy]/g, function (c) {
-    var r = (Math.random() * 16) | 0,
+    const r = (Math.random() * 16) | 0,
       v = c == "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
@@ -411,7 +411,7 @@ export function uuid() {
  * @returns Timestamp of now in seconds
  */
 export function timeOfNow() {
-  let now = Math.floor(Date.now() / 1000);
+  const now = Math.floor(Date.now() / 1000);
   return now;
   // return now.toString();
 }
@@ -477,7 +477,7 @@ export async function getDataFromAO(
   data?: any
 ) {
 
-  let start = performance.now();
+  const start = performance.now();
   // console.log('==> [getDataFromAO]');
 
   let result;
@@ -495,9 +495,9 @@ export async function getDataFromAO(
   console.log('action', action);
   console.log('result', result);
 
-  let resp = result.Messages[0].Data;
+  const resp = result.Messages[0].Data;
 
-  let end = performance.now();
+  const end = performance.now();
   // console.log(`<== [getDataFromAO] [${Math.round(end - start)} ms]`);
 
   return JSON.parse(resp);
@@ -542,7 +542,7 @@ export async function isLoggedIn() {
   if (localStorage.getItem('id_token'))
     window.arweaveWallet = Othent;
 
-  let address = await getWalletAddress();
+  const address = await getWalletAddress();
   if (address)
     return address;
   else
@@ -565,7 +565,7 @@ export async function fetchGraphQL(queryObject: any) {
 }
 
 export async function getDefaultProcess(owner: string) {
-  let start = performance.now();
+  const start = performance.now();
   // console.log('==> [getDefaultProcess]');
 
   const queryObject = {
@@ -590,9 +590,9 @@ export async function getDefaultProcess(owner: string) {
   };
 
   try {
-    let response = await fetchGraphQL(queryObject);
+    const response = await fetchGraphQL(queryObject);
 
-    let end = performance.now();
+    const end = performance.now();
     // console.log(`<== [getDefaultProcess] [${Math.round(end - start)} ms]`);
 
     if (response.length == 0)
@@ -606,9 +606,9 @@ export async function getDefaultProcess(owner: string) {
 }
 
 export async function downloadFromArweave(txid: string) {
-  let url = ARWEAVE_GATEWAY + txid;
-  let resp = await fetch(url);
-  let data = await resp.json();
+  const url = ARWEAVE_GATEWAY + txid;
+  const resp = await fetch(url);
+  const data = await resp.json();
   return data;
 }
 
@@ -635,7 +635,7 @@ export async function getTokenBalance(process: string, address: string) {
 }
 
 export function formatBalance(str: string, len: number) {
-  let length = str.length;
+  const length = str.length;
   if (length > len)
     str = str.slice(0, length - len) + '.' + str.slice(length - len);
   else

@@ -10,11 +10,11 @@ interface ViewImageModalProps {
 }
 
 class ViewImageModal extends React.Component<ViewImageModalProps, {}> {
-  constructor(props:ViewImageModalProps) {
+  constructor(props: ViewImageModalProps) {
     super(props);
     this.onClose = this.onClose.bind(this);
   }
-  
+
   componentDidMount() {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') // Esc key
@@ -34,11 +34,11 @@ class ViewImageModal extends React.Component<ViewImageModalProps, {}> {
   }
 
   render() {
-    if(!this.props.open)
+    if (!this.props.open)
       return (<div></div>);
 
     return (
-      <div className="modal open" onClick={e=>e.stopPropagation()}>
+      <div className="modal open" onClick={e => e.stopPropagation()}>
         <div className="modal-content view-image-modal-content">
           <button className="modal-close-button" onClick={this.onClose}>
             <BsFillXCircleFill />

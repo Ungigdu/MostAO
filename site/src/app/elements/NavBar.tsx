@@ -29,8 +29,8 @@ class NavBar extends React.Component {
   }
 
   render() {
-    let buttons = [];
-    let menu = AppConfig.menu;
+    const buttons = [];
+    const menu = AppConfig.menu;
 
     for (let i = 0; i < menu.length; i++) {
       if (menu[i].loggedIn) {

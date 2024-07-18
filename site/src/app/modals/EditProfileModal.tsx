@@ -80,7 +80,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
   }
 
   onCloseBannerList(banner: string) {
-    let b = banner ? banner : this.state.banner;
+    const b = banner ? banner : this.state.banner;
     this.setState({ openBannerList: false, banner: b });
   }
 
@@ -89,7 +89,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
   }
 
   onClosePortraitList(portrait: string) {
-    let p = portrait ? portrait : this.state.avatar;
+    const p = portrait ? portrait : this.state.avatar;
     this.setState({ openPortraitList: false, avatar: p });
   }
 
@@ -102,10 +102,10 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
   }
 
   async saveProfile() {
-    let profile = Server.service.getProfile(Server.service.getActiveAddress());
+    const profile = Server.service.getProfile(Server.service.getActiveAddress());
     // console.log("cached profile:", profile)
 
-    let nickname = this.state.nickname.trim();
+    const nickname = this.state.nickname.trim();
 
     let dirty = false;
     if (this.state.banner != profile.banner) dirty = true;
@@ -130,7 +130,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
 
     this.setState({ message: 'Saving profile...' });
 
-    let data = {
+    const data = {
       address: Server.service.getActiveAddress(),
       avatar: this.state.avatar,
       banner: this.state.banner,
@@ -142,7 +142,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
 
     await messageToAO(AO_STORY, data, 'Register');
 
-    let response = await messageToAO(AO_TWITTER, data, 'Register');
+    const response = await messageToAO(AO_TWITTER, data, 'Register');
 
     if (response) {
       Server.service.addProfileToCache(data);
@@ -188,7 +188,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
         const reader = new FileReader();
         reader.onloadend = () => {
           // console.log('Compress CoverImage', reader.result);
-          let image = reader.result.toString();
+          const image = reader.result.toString();
           if (this.pickBanner)
             this.setState({ banner: image });
           else
@@ -201,10 +201,10 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
   }
 
   createAvatar() {
-    let random = uuid();
+    const random = uuid();
     // localStorage.setItem('avatar', random);
-    
-    let nickname = localStorage.getItem('nickname');
+
+    const nickname = localStorage.getItem('nickname');
     const resp = createAvatar(micah, {
       seed: nickname + random
     });
@@ -228,11 +228,11 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
           <div>
             <div className="edit-profile-banner-container">
               {/* <img className="edit-profile-banner" src={bannerImage} onClick={()=>this.selectImage(true)} /> */}
-              <img className="edit-profile-banner" 
-              src={this.state.banner ? this.state.banner : './banner-default.png'} />
-              <img className="edit-profile-portrait" 
-              src={this.state.avatar ? this.state.avatar : generateAvatar()} 
-              onClick={() => this.selectImage(false)} />
+              <img className="edit-profile-banner"
+                src={this.state.banner ? this.state.banner : './banner-default.png'} />
+              <img className="edit-profile-portrait"
+                src={this.state.avatar ? this.state.avatar : generateAvatar()}
+                onClick={() => this.selectImage(false)} />
               {/* <BsCamera className="edit-profile-camera" onClick={() => this.selectImage(false)} /> */}
 
               <button
