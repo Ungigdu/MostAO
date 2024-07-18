@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
 import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
@@ -172,7 +173,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       if (!handle) continue; // handle is empty string, will be removed.
 
       divs.push(
-        <div key={i} className='home-page-did' onClick={() => this.pickHandle(handle)}>
+        <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`}>
           <img
             className='home-page-portrait'
             src={generateAvatar(handle.pid)}
@@ -181,7 +182,7 @@ class HomePage extends React.Component<{}, HomePageState> {
           <div key={uuid()} className="home-page-nickname">
             @{handle.handle}
           </div>
-        </div>
+        </NavLink>
       )
     }
 

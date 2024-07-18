@@ -4,6 +4,7 @@ import SitePage from './pages/SitePage';
 import NotFoundPage from './pages/NotFoundPage';
 import './App.css';
 import HomePage from './pages/HomePage';
+import HandleDetail from './pages/HandleDetail';
 
 class App extends React.Component<{}, {}> {
   constructor(props = {}) {
@@ -20,6 +21,7 @@ class App extends React.Component<{}, {}> {
           <Route path='/' element={<SitePage />}>
             <Route index element={<HomePage />} />
             <Route path="*" element={<NotFoundPage />} />
+            <Route path="/handle/:handleName" element={<HandleDetail />} />
           </Route>
         </Routes>
       </HashRouter>
