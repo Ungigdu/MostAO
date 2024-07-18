@@ -1,7 +1,7 @@
 import React from 'react';
 import { BsFillXCircleFill } from 'react-icons/bs';
 import { Server } from '../../server/server';
-import { messageToAO, generateAvatar, uuid } from '../util/util';
+import { messageToAO, generateAvatar, uuid, getWalletPublicKey } from '../util/util';
 import './Modal.css'
 import './EditProfileModal.css'
 import MessageModal from './MessageModal';
@@ -25,6 +25,7 @@ interface EditProfileModalState {
   avatar: string;
   nickname: string;
   bio: string;
+  publicKey: string;
   message: string;
   alert: string;
   openBannerList: boolean;
@@ -41,10 +42,11 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
     this.state = {
       changeBanner: false,
       changePortrait: false,
-      banner: '',
-      avatar: '',
-      nickname: '',
-      bio: '',
+      banner: this.props.data.banner,
+      avatar: this.props.data.avatar,
+      nickname: this.props.data.nickname,
+      bio: this.props.data.bio,
+      publicKey: this.props.data.publicKey,
       message: '',
       alert: '',
       openBannerList: false,
@@ -101,19 +103,29 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
     this.setState({ bio: e.currentTarget.value });
   }
 
+  private isDirty(newData: any, oldData: any): boolean {
+    if (!oldData) return true;
+    return Object.keys(newData).some((key) => newData[key] !== oldData[key]);
+  }
+
   async saveProfile() {
     const profile = Server.service.getProfile(Server.service.getActiveAddress());
-    // console.log("cached profile:", profile)
+    console.log("cached profile:", profile)
 
     const nickname = this.state.nickname.trim();
+    const data = {
+      avatar: this.state.avatar,
+      banner: this.state.banner,
+      nickname: nickname,
+      bio: this.state.bio.trim(),
+      time: this.props.data.time,
+      publicKey: this.props.data.publicKey && this.props.data.publicKey.trim() !== ''
+        ? this.props.data.publicKey
+        : await getWalletPublicKey(),
+    };
+    console.log("data:", data)
 
-    let dirty = false;
-    if (this.state.banner != profile.banner) dirty = true;
-    if (this.state.avatar != profile.avatar) dirty = true;
-    if (nickname != profile.nickname) dirty = true;
-    if (this.state.bio != profile.bio) dirty = true;
-
-    if (!dirty) {
+    if (!this.isDirty(data, profile)) {
       this.props.onClose();
       return;
     }
@@ -130,29 +142,19 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
 
     this.setState({ message: 'Saving profile...' });
 
-    const data = {
-      address: Server.service.getActiveAddress(),
-      avatar: this.state.avatar,
-      banner: this.state.banner,
-      nickname: nickname,
-      bio: this.state.bio.trim(),
-      time: this.props.data.time
-    };
-    // console.log("data:", data)
+    // await messageToAO(AO_STORY, data, 'Register');
 
-    await messageToAO(AO_STORY, data, 'Register');
+    // const response = await messageToAO(AO_TWITTER, data, 'Register');
 
-    const response = await messageToAO(AO_TWITTER, data, 'Register');
-
-    if (response) {
-      Server.service.addProfileToCache(data);
-      this.setState({ message: '' });
-      this.props.onClose();
-      publish('profile-updated');
-    }
-    else {
-      this.setState({ message: '', alert: 'Setting the profile failed.' });
-    }
+    // if (response) {
+    //   Server.service.addProfileToCache(data);
+    //   this.setState({ message: '' });
+    //   this.props.onClose();
+    //   publish('profile-updated');
+    // }
+    // else {
+    //   this.setState({ message: '', alert: 'Setting the profile failed.' });
+    // }
   }
 
   onClose() {

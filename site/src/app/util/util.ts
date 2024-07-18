@@ -517,7 +517,7 @@ export async function connectWallet() {
     // connect to the ArConnect browser extension
     await window.arweaveWallet.connect(
       // request permissions
-      ["ACCESS_ADDRESS", "SIGN_TRANSACTION"],
+      ["ACCESS_ADDRESS", "ACCESS_PUBLIC_KEY", "SIGN_TRANSACTION"],
     );
   } catch (error) {
     alert('You should connect to ArConnect browser extension.');
@@ -536,6 +536,18 @@ export async function getWalletAddress() {
   }
 
   return address;
+}
+
+export async function getWalletPublicKey() {
+  let publicKey;
+  try {
+    publicKey = await window.arweaveWallet.getActivePublicKey();
+  } catch (error) {
+    console.log("getWalletPublicKey -> ERR:", error);
+    return '';
+  }
+  console.log("publicKey:", publicKey)
+  return publicKey;
 }
 
 export async function isLoggedIn() {
