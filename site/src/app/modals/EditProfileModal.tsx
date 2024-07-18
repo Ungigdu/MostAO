@@ -24,9 +24,9 @@ interface EditProfileModalState {
   changePortrait: boolean;
   banner: string;
   avatar: string;
-  nickname: string;
+  name: string;
   bio: string;
-  publicKey: string;
+  pubkey: string;
   message: string;
   alert: string;
   openBannerList: boolean;
@@ -45,9 +45,9 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
       changePortrait: false,
       banner: this.props.data.banner,
       avatar: this.props.data.avatar,
-      nickname: this.props.data.nickname,
+      name: this.props.data.name,
       bio: this.props.data.bio,
-      publicKey: this.props.data.publicKey,
+      pubkey: this.props.data.pubkey,
       message: '',
       alert: '',
       openBannerList: false,
@@ -73,7 +73,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
     this.setState({
       banner: this.props.data.banner,
       avatar: this.props.data.avatar,
-      nickname: this.props.data.nickname,
+      name: this.props.data.name,
       bio: this.props.data.bio,
     });
   }
@@ -97,7 +97,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
   }
 
   onChangeName(e: any) {
-    this.setState({ nickname: e.currentTarget.value });
+    this.setState({ name: e.currentTarget.value });
   }
 
   onChangeBio(e: any) {
@@ -113,15 +113,15 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
     const profile = Server.service.getProfile(Server.service.getActiveAddress());
     console.log("cached profile:", profile)
 
-    const nickname = this.state.nickname.trim();
+    const name = this.state.name.trim();
     const data = {
-      avatar: this.state.avatar,
+      img: this.state.avatar,
       banner: this.state.banner,
-      nickname: nickname,
+      name: name,
       bio: this.state.bio.trim(),
       time: this.props.data.time,
-      publicKey: this.props.data.publicKey && this.props.data.publicKey.trim() !== ''
-        ? this.props.data.publicKey
+      pubkey: this.props.data.pubkey && this.props.data.pubkey.trim() !== ''
+        ? this.props.data.pubkey
         : await getWalletPublicKey(),
     };
     console.log("data:", data)
@@ -132,9 +132,9 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
     }
 
     let errorMsg = '';
-    if (nickname.length < 2)
+    if (name.length < 2)
       errorMsg = 'Nickname must be at least 2 characters.';
-    if (nickname.length > 25)
+    if (name.length > 25)
       errorMsg = 'Nickname can be up to 25 characters.';
     if (errorMsg != '') {
       this.setState({ alert: errorMsg });
@@ -207,9 +207,9 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
     const random = uuid();
     // localStorage.setItem('avatar', random);
 
-    const nickname = localStorage.getItem('nickname');
+    const name = localStorage.getItem('name');
     const resp = createAvatar(micah, {
-      seed: nickname + random
+      seed: name + random
     });
 
     const avatar = resp.toDataUriSync();
@@ -259,8 +259,8 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
                 <div className='edit-profile-label'>Name</div>
                 <input
                   className="edit-profile-input"
-                  placeholder="nickname"
-                  value={this.state.nickname}
+                  placeholder="name"
+                  value={this.state.name}
                   onChange={this.onChangeName}
                 />
               </div>
