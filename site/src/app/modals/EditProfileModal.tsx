@@ -9,7 +9,6 @@ import AlertModal from './AlertModal';
 import Compressor from 'compressorjs';
 import { createAvatar } from '@dicebear/core';
 import { micah } from '@dicebear/collection';
-import { AO_STORY, AO_TWITTER } from '../util/consts';
 import { publish } from '../util/event';
 
 interface EditProfileModalProps {
@@ -143,19 +142,19 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
 
     this.setState({ message: 'Saving profile...' });
 
-    // await messageToAO(AO_STORY, data, 'Register');
+    console.log('ProfileUpdate', this.props.pid, data);
 
-    // const response = await messageToAO(AO_TWITTER, data, 'Register');
+    const response = await messageToAO(this.props.pid, data, 'ProfileUpdate');
 
-    // if (response) {
-    //   Server.service.addProfileToCache(data);
-    //   this.setState({ message: '' });
-    //   this.props.onClose();
-    //   publish('profile-updated');
-    // }
-    // else {
-    //   this.setState({ message: '', alert: 'Setting the profile failed.' });
-    // }
+    if (response) {
+      Server.service.addProfileToCache(data);
+      this.setState({ message: '' });
+      this.props.onClose();
+      publish('profile-updated');
+    }
+    else {
+      this.setState({ message: '', alert: 'Setting the profile failed.' });
+    }
   }
 
   onClose() {

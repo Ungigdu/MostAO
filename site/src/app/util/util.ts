@@ -495,12 +495,17 @@ export async function getDataFromAO(
   console.log('action', action);
   console.log('result', result);
 
-  const resp = result.Messages[0].Data;
+  const resp = result.Messages.length > 0 ? result.Messages[0].Data : null;
 
+  if (resp) {
   const end = performance.now();
   // console.log(`<== [getDataFromAO] [${Math.round(end - start)} ms]`);
 
   return JSON.parse(resp);
+  } else {
+    console.error("No messages received");
+    return null;
+  }
 }
 
 // check the state of bookmark
@@ -681,8 +686,8 @@ export function generateAvatar(seed?: string) {
   return resp.toDataUriSync();
 }
 
-export async function getProfile(address: string) {
-  return await getDataFromAO(AO_TWITTER, 'GetProfile', { address });
+export async function getProfile(processId: string) {
+  return await getDataFromAO(processId, 'GetProfile', {});
 }
 
 export function shortStr(str: string, max: number) {
