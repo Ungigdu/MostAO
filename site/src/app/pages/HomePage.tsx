@@ -173,7 +173,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       if (!handle) continue; // handle is empty string, will be removed.
 
       divs.push(
-        <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`}>
+        <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`} state={{ pid: handle.pid }}>
           <img
             className='home-page-portrait'
             src={generateAvatar(handle.pid)}

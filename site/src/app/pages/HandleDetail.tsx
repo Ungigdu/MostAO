@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getProfile } from '../util/util';
 import EditProfileModal from '../modals/EditProfileModal';
 import { BsArrowLeftCircleFill } from 'react-icons/bs';
 
 const HandleDetail: React.FC = () => {
   const { handleName } = useParams<{ handleName: string }>();
+  const location = useLocation();
+  const pid = (location.state as any).pid;
   const [profile, setProfileData] = useState<any>(null);
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +17,8 @@ const HandleDetail: React.FC = () => {
   useEffect(() => {
     const fetchProfileAndHistory = async () => {
       try {
-        const profileData = await getProfile(handleName);
+        const response = await getProfile(pid);
+        const profileData = response || [];
         setProfileData(profileData);
 
         if (profileData) {
@@ -63,6 +66,7 @@ const HandleDetail: React.FC = () => {
             <p>Avatar: {profile.img}</p>
             <p>Banner: {profile.banner}</p>
             <p>Bio: {profile.bio}</p>
+            <p>ProcessId: {pid}</p>
 
             <button onClick={handleEditProfile}>Edit Profile</button>
           </div>
@@ -85,6 +89,7 @@ const HandleDetail: React.FC = () => {
         open={isEditProfileModalOpen}
         onClose={handleCloseModal}
         data={profile}
+        pid={pid}
       />
     </div>
   );

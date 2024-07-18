@@ -15,6 +15,7 @@ import { publish } from '../util/event';
 interface EditProfileModalProps {
   open: boolean;
   onClose: Function;
+  pid: string;
   data: any;
 }
 
