@@ -25,9 +25,9 @@ dryrun({
   Target = "{Registry Process ID}",
   Data = "{name}",
   Tags = {
-    Action = "QueryHandle"
-  }
-})
+    Action = "QueryHandle",
+  },
+});
 ```
 
 ### GetHandles(owner)
@@ -39,9 +39,9 @@ dryrun({
   Target = "{Registry Process ID}",
   Data = "{owner}",
   Tags = {
-    Action = "GetHandles"
-  }
-})
+    Action = "GetHandles",
+  },
+});
 ```
 
 ### Register(name)
@@ -53,9 +53,9 @@ send({
   Target = "{Handle Process ID}",
   Data = "{name}",
   Tags = {
-    Action = "Register"
-  }
-})
+    Action = "Register",
+  },
+});
 ```
 
 ### Renounce(Name)
@@ -66,12 +66,12 @@ Renounce a handle, set it free. Can only be called by current owner
 send({
   Target = "{Registry Process ID}",
   Data = {
-   name = "{name}"
+    name = "{name}",
   },
   Tags = {
-    Action = "Renounce"
-  }
-})
+    Action = "Renounce",
+  },
+});
 ```
 
 ### QuerySession(handleA, handleB)
@@ -83,16 +83,16 @@ dryrun({
   Target = "{Registry Process ID}",
   Data = "{handleA, handleB}",
   Tags = {
-    Action = "QuerySession"
-  }
-})
+    Action = "QuerySession",
+  },
+});
 ```
 
 ### EstablishSession(otherHandle)
 
 This function can only be called by a handle process. It will spawn a session process between the caller and the counterpart.
 
-```ts
+```lua
 send({
   Target = "{Registry Process ID}",
   Data = "{otherHandle}",
@@ -132,9 +132,9 @@ send({
   Target = "{Handle Process ID}",
   Data = "{profile}",
   Tags = {
-    Action = "ProfileUpdate"
-  }
-})
+    Action = "ProfileUpdate",
+  },
+});
 ```
 
 ### GetProfile()
@@ -145,10 +145,23 @@ Retrieve the profile of this handle.
 send({
   Target = "{Handle Process ID}",
   Tags = {
-    Action = "GetProfile"
-  }
-})
+    Action = "GetProfile",
+  },
+});
+```
 
+### EstablishSessionWithHandle(otherHandleID)
+
+This function is called by the user frontend. The handle will send a message to the Registry to invoke the EstablishSession(otherHandle) function and spawn a session between the caller and the counterpart.
+
+```ts
+send({
+  Target = "{Handle Process ID}",
+  Data = "{otherHandleID}",
+  Tags = {
+    Action = "EstablishSessionWithHandle",
+  },
+});
 ```
 
 ### RelayMessage(content)
@@ -160,16 +173,16 @@ send({
   Target = "{Session Process ID}",
   Data = "{content}",
   Tags = {
-    Action = "SendMessage"
-  }
-})
+    Action = "SendMessage",
+  },
+});
 ```
 
 ### Notify(data?)
 
 Whenever a handle sends a message to session process, the session process will notify the conterpart of incoming message by sending a notification to it. This can only be called by session process. The data is optional for now.
 
-```ts
+```lua
 send({
   Target = "{Handle Process ID}",
   Data = "{data}",
@@ -198,7 +211,7 @@ The activities of the session process is as follows:
 
 Update session key, can be called by either handle. All handles should be kept in an array. The lens of array can be seen as generation number
 
-```ts
+```lua
 send({
   Target = "{Session Process ID}",
   Data = "{SK_EA, pubkey_A},{SK_EB, pubkey_B}",
@@ -216,9 +229,9 @@ get current session key with key generation
 dryrun({
   Target = "{Session Process ID}",
   Tags = {
-    Action = "GetCurrentKey"
-  }
-})
+    Action = "GetCurrentKey",
+  },
+});
 ```
 
 ### GetKeyByGeneration(generation)
@@ -230,9 +243,9 @@ dryrun({
   Target = "{Session Process ID}",
   Data = "generation",
   Tags = {
-    Action = "GetKeyByGeneration"
-  }
-})
+    Action = "GetKeyByGeneration",
+  },
+});
 ```
 
 ### SendMessage(content)
@@ -244,9 +257,9 @@ send({
   Target = "{Session Process ID}",
   Data = "{content}",
   Tags = {
-    Action = "SendMessage"
-  }
-})
+    Action = "SendMessage",
+  },
+});
 ```
 
 ### QueryMessage(from, until, limit, order)
