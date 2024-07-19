@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getProfile } from '../util/util';
+import { getDataFromAO, getProfile, messageToAO } from '../util/util';
 import EditProfileModal from '../modals/EditProfileModal';
 import { BsArrowLeftCircleFill } from 'react-icons/bs';
+import { HANDLE_REGISTRY } from '../util/consts';
 
 const HandleDetail: React.FC = () => {
   const { handleName } = useParams<{ handleName: string }>();
@@ -12,6 +13,7 @@ const HandleDetail: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
+  const [otherHandleName, setOtherHandleName] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,8 +25,9 @@ const HandleDetail: React.FC = () => {
 
         if (profileData) {
           // TODO: implement getChatHistory
-          // const history = await getChatHistory(handleName);
-          // setChatHistory(history);
+          const history = await getDataFromAO(pid, "GetChatList", {});
+          console.log(history);
+          setChatHistory(history);
         }
       } catch (error) {
         console.error("Error fetching profile or chat history:", error);
@@ -48,6 +51,24 @@ const HandleDetail: React.FC = () => {
     navigate('/');
   };
 
+  const handleEstablishSession = async () => {
+    try {
+      const response = await messageToAO(
+        HANDLE_REGISTRY,
+        { handleA: handleName, handleB: otherHandleName },
+        "EstablishSession"
+      );
+      console.log(response);
+      if (response) {
+        console.log("Session established successfully");
+        // Optionally update chat history or provide feedback to the user
+      } else {
+        console.error("Failed to establish session:", response);
+      }
+    } catch (error) {
+      console.error("Error establishing session:", error);
+    }
+  };
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -66,6 +87,7 @@ const HandleDetail: React.FC = () => {
             <p>Avatar: {profile.img}</p>
             <p>Banner: {profile.banner}</p>
             <p>Bio: {profile.bio}</p>
+            <p>PublicKey: {profile.pubkey}</p>
             <p>ProcessId: {pid}</p>
 
             <button onClick={handleEditProfile}>Edit Profile</button>
@@ -78,10 +100,23 @@ const HandleDetail: React.FC = () => {
         )}
       </div>
       <div>
+        <h3>Establish Session</h3>
+        <input
+          type="text"
+          placeholder="Enter other handle name"
+          value={otherHandleName}
+          onChange={(e) => setOtherHandleName(e.target.value)}
+        />
+        <button onClick={handleEstablishSession}>Establish Session</button>
+      </div>
+      <div>
         <h3>Chat History</h3>
         <ul>
           {chatHistory.map((chat, index) => (
-            <li key={index}>{chat.message}</li>
+            <li key={index}>
+              <p>Session ID: {chat.sessionID}</p>
+              <p>Other Handle: {chat.otherHandle}</p>
+            </li>
           ))}
         </ul>
       </div>
