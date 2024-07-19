@@ -178,6 +178,33 @@ send({
 });
 ```
 
+### UpdateChatList(sessionInfo)
+
+This function is called by the Registry process. It updates the chat list of this handle with new session information. Only the Registry process is authorized to call this function.
+
+```lua
+send({
+  Target = "{Handle Process ID}",
+  Data = "{sessionInfo}",
+  Tags = {
+    Action = "UpdateChatList"
+  }
+})
+```
+
+### GetChatList()
+
+This function is called by the handle owner. It retrieves the chat list of this handle, including all related session information.
+
+```ts
+send({
+  Target = "{Handle Process ID}",
+  Tags = {
+    Action = "GetChatList",
+  },
+});
+```
+
 ### Notify(data?)
 
 Whenever a handle sends a message to session process, the session process will notify the conterpart of incoming message by sending a notification to it. This can only be called by session process. The data is optional for now.
