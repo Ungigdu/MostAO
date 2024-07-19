@@ -88,14 +88,14 @@ dryrun({
 });
 ```
 
-### EstablishSession(otherHandle)
+### EstablishSession(handleA, handleB)
 
-This function can only be called by a handle process. It will spawn a session process between the caller and the counterpart.
+This function can only be called by either one of handle owner. It will spawn a session process between the handleA and the handleB. Then notify the two handles to update the chatlist.
 
 ```lua
 send({
   Target = "{Registry Process ID}",
-  Data = "{otherHandle}",
+  Data = "{handleA, handleB}",
   Tags = {
     Action = "EstablishSession"
   }
@@ -146,20 +146,6 @@ send({
   Target = "{Handle Process ID}",
   Tags = {
     Action = "GetProfile",
-  },
-});
-```
-
-### EstablishSessionWithHandle(otherHandleID)
-
-This function is called by the user frontend. The handle will send a message to the Registry to invoke the EstablishSession(otherHandle) function and spawn a session between the caller and the counterpart.
-
-```ts
-send({
-  Target = "{Handle Process ID}",
-  Data = "{otherHandleID}",
-  Tags = {
-    Action = "EstablishSessionWithHandle",
   },
 });
 ```
