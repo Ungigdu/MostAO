@@ -85,7 +85,6 @@ const HandleDetail: React.FC = () => {
   // Added by Kevin
 
   if (loading) {
-    // return <div>Loading...</div>;
     return (
       <div className='home-page-welcome'>
         {renderHeader()}
@@ -188,21 +187,11 @@ const HandleDetail: React.FC = () => {
         <div className="profile-page-id">@{handleName}</div>
         <div className="profile-page-desc">{profile.bio ? profile.bio : 'This is a bio.'}</div>
         <div className="profile-page-pid">PID: {pid}</div>
+
+        {/* <div className="profile-page-pid">PubKey: {profile.pubkey}</div> */}
         {/* <div className='profile-page-joined-container'>
           <BsCalendarWeek />
           <div className='profile-page-joined'>Joined&nbsp;&nbsp;&nbsp;{joined}</div>
-        </div> */}
-
-        {/* <div className='profile-page-follow-container'>
-          <NavLink className="profile-page-follow-link" to={'/follow/' + this.state.address}>
-            <div className='profile-page-follow-number'>{this.state.following}</div>
-            <div className='profile-page-follow-text'>Following</div>
-          </NavLink>
-
-          <NavLink className="profile-page-follow-link" to={'/follow/' + this.state.address}>
-            <div className='profile-page-follow-number'>{this.state.followers}</div>
-            <div className='profile-page-follow-text'>Followers</div>
-          </NavLink>
         </div> */}
 
         <div className='profile-page-filter-container'>
@@ -248,61 +237,6 @@ const HandleDetail: React.FC = () => {
     </div>
   )
 
-  // return (
-  //   <div>
-  //     <button onClick={handleBack}>
-  //       <BsArrowLeftCircleFill size={30} />
-  //     </button>
-  //     <h2>Handle: @{handleName}</h2>
-  //     <div>
-  //       <h3>Profile</h3>
-  //       {profile ? (
-  //         <div>
-  //           <p>Name: {profile.name}</p>
-  //           <p>Avatar: {profile.img}</p>
-  //           <p>Banner: {profile.banner}</p>
-  //           <p>Bio: {profile.bio}</p>
-  //           <p>PublicKey: {profile.pubkey}</p>
-  //           <p>ProcessId: {pid}</p>
-
-  //           <button onClick={handleEditProfile}>Edit Profile</button>
-  //         </div>
-  //       ) : (
-  //         <div>
-  //           <h2>Set up your profile</h2>
-  //           <button onClick={handleEditProfile}>Set up Profile</button>
-  //         </div>
-  //       )}
-  //     </div>
-  //     <div>
-  //       <h3>Establish Session</h3>
-  //       <input
-  //         type="text"
-  //         placeholder="Enter other handle name"
-  //         value={otherHandleName}
-  //         onChange={(e) => setOtherHandleName(e.target.value)}
-  //       />
-  //       <button onClick={handleEstablishSession}>Establish Session</button>
-  //     </div>
-  //     <div>
-  //       <h3>Chat History</h3>
-  //       <ul>
-  //         {chatHistory.map((chat, index) => (
-  //           <li key={index}>
-  //             <p>Session ID: {chat.sessionID}</p>
-  //             <p>Other Handle: {chat.otherHandle}</p>
-  //           </li>
-  //         ))}
-  //       </ul>
-  //     </div>
-  //     <EditProfileModal
-  //       open={isEditProfileModalOpen}
-  //       onClose={handleCloseModal}
-  //       data={profile}
-  //       pid={pid}
-  //     />
-  //   </div>
-  // );
 };
 
 export default HandleDetail;
