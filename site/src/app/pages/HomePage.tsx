@@ -170,7 +170,7 @@ class HomePage extends React.Component<{}, HomePageState> {
 
     for (let i = 0; i < this.state.handles.length; i++) {
       const handle = this.state.handles[i];
-      if (!handle) continue; // handle is empty string, will be removed.
+      if (!handle.handle) continue; // handle is empty string, will be removed.
 
       divs.push(
         <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`} state={{ pid: handle.pid }}>
@@ -179,7 +179,7 @@ class HomePage extends React.Component<{}, HomePageState> {
             src={generateAvatar(handle.pid)}
           />
 
-          <div key={uuid()} className="home-page-nickname">
+          <div className="home-page-nickname">
             @{handle.handle}
           </div>
         </NavLink>
@@ -187,7 +187,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
 
     divs.push(
-      <div className='home-page-did' onClick={() => this.signUp()}>
+      <div key={uuid()} className='home-page-did' onClick={() => this.signUp()}>
         <BsFillPersonPlusFill size={30} />
       </div>
     )

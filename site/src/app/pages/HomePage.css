@@ -234,7 +234,12 @@
   font-size: 18px;
   height: 50px;
   border-radius: 5px;
+  text-decoration: none;
   background-color: var(--section-header-color);
+}
+
+.home-page-did:hover {
+  background-color: rgb(91, 93, 98);
 }
 
 .home-page-input {

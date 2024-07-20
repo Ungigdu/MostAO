@@ -1,21 +1,15 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
-  BsAward, BsBell, BsBookmark, BsChatText, BsController, BsHouse,
+  BsAward, BsBookmark, BsChatText, BsController, 
   BsPerson
 } from 'react-icons/bs';
 import {
-  getDataFromAO, getDefaultProcess,
-  getTokenBalance, isLoggedIn,
-  messageToAO
-} from '../util/util';
-import { AOT_TEST, AR_DEC, CRED, ICON_SIZE, ORBT, TRUNK, USDA, WAR } from '../util/consts';
+  
+  isLoggedIn} from '../util/util';
 import { Server } from '../../server/server';
 import { publish, subscribe } from '../util/event';
 import './SitePage.css';
-import { AiOutlineFire } from 'react-icons/ai';
-import { RiQuillPenLine } from "react-icons/ri";
-import { CgMoreO } from "react-icons/cg";
 
 interface SitePageState {
   users: number;
@@ -60,36 +54,8 @@ class SitePage extends React.Component<{}, SitePageState> {
     Server.service.setActiveAddress(address);
     this.setState({ address })
 
-    const process = await getDefaultProcess(address);
-    Server.service.setDefaultProcess(process);
-
-    const bal_cred = await getTokenBalance(CRED, process);
-    // bal_cred = formatBalance(bal_cred, 3);
-    // console.log("bal_cred:", bal_cred)
-    Server.service.setBalanceOfCRED(bal_cred);
-
-    const bal_aot = await getTokenBalance(AOT_TEST, process);
-    // console.log("bal_aot:", bal_aot)
-    Server.service.setBalanceOfAOT(bal_aot);
-
-    const bal_trunk = await getTokenBalance(TRUNK, process);
-    // bal_trunk = formatBalance(bal_trunk, 3);
-    // console.log("bal_trunk:", bal_trunk)
-    Server.service.setBalanceOfTRUNK(bal_trunk);
-
-    const bal_war = await getTokenBalance(WAR, process);
-    // console.log("bal_war:", bal_war)
-    Server.service.setBalanceOfWAR(bal_war / AR_DEC);
-
-    const bal_0rbit = await getTokenBalance(ORBT, process);
-    // console.log("bal_0rbit:", bal_0rbit)
-    Server.service.setBalanceOf0rbit(bal_0rbit / AR_DEC);
-
-    const bal_usda = await getTokenBalance(USDA, process);
-    // console.log("bal_usda:", bal_usda)
-    Server.service.setBalanceOfUSDA(bal_usda / AR_DEC);
-
-    publish('get-bal-done');
+    // const process = await getDefaultProcess(address);
+    // Server.service.setDefaultProcess(process);
   }
 
   onOpen() {
@@ -99,41 +65,6 @@ class SitePage extends React.Component<{}, SitePageState> {
   onClose() {
     this.setState({ open: false });
     publish('new-post');
-  }
-
-  renderPopupMenu() {
-    return (
-      <div
-        className='site-page-mobile-menu'
-        onClick={() => this.setState({ openMenu: false })}
-      >
-        <div className='site-page-menu-container'>
-          <NavLink className='site-page-menu-item' to='/games'>
-            <BsController size={23} />Games
-          </NavLink>
-
-          <NavLink className='site-page-menu-item' to='/token'>
-            <BsAward size={23} />TokenEco
-          </NavLink>
-
-          <NavLink className='site-page-menu-item' to='/chat'>
-            <BsChatText size={23} />Chatroom
-          </NavLink>
-
-          <NavLink className='site-page-menu-item' to='/bookmarks'>
-            <BsBookmark size={23} />Bookmarks
-          </NavLink>
-
-          <NavLink className='site-page-menu-item' to='/profile'>
-            <BsPerson size={23} />Profile
-          </NavLink>
-
-          {/* <div className='site-page-menu-item'>
-            <RxExit size={23} />Log out
-          </div> */}
-        </div>
-      </div>
-    )
   }
 
   render() {
@@ -175,10 +106,6 @@ class SitePage extends React.Component<{}, SitePageState> {
             <Outlet />
           </div>
         </div>
-
-        {this.state.openMenu &&
-          this.renderPopupMenu()
-        }
       </div>
     );
   }

@@ -43,7 +43,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
       changeBanner: false,
       changePortrait: false,
       banner: this.props.data.banner,
-      avatar: this.props.data.avatar,
+      avatar: this.props.data.img,
       name: this.props.data.name,
       bio: this.props.data.bio,
       pubkey: this.props.data.pubkey,
@@ -69,9 +69,10 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
   }
 
   async start() {
+    // console.log('Edit Profile => ', this.props.data)
     this.setState({
       banner: this.props.data.banner,
-      avatar: this.props.data.avatar,
+      avatar: this.props.data.img,
       name: this.props.data.name,
       bio: this.props.data.bio,
     });
@@ -233,7 +234,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
               <img className="edit-profile-banner"
                 src={this.state.banner ? this.state.banner : './banner-default.png'} />
               <img className="edit-profile-portrait"
-                src={this.state.avatar ? this.state.avatar : generateAvatar()}
+                src={this.state.avatar ? this.state.avatar : generateAvatar(this.props.pid)}
                 onClick={() => this.selectImage(false)} />
               {/* <BsCamera className="edit-profile-camera" onClick={() => this.selectImage(false)} /> */}
 
