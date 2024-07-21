@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
+import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
@@ -60,7 +60,8 @@ class HomePage extends React.Component<{}, HomePageState> {
     this.onQuestionNo = this.onQuestionNo.bind(this);
 
     subscribe('wallet-events', () => {
-      this.forceUpdate();
+      // this.forceUpdate();
+      this.start();
     });
   }
 
@@ -75,7 +76,6 @@ class HomePage extends React.Component<{}, HomePageState> {
     const address = await isLoggedIn();
     this.setState({ loading: false, isLoggedIn: address, address });
 
-    // FOR TEST
     if (address) this.getUserHandles(address);
   }
 
@@ -97,19 +97,16 @@ class HomePage extends React.Component<{}, HomePageState> {
     const connected = await connectWallet();
     if (connected) {
       const address = await getWalletAddress();
-      console.log("address:", address)
-
       this.setState({ isLoggedIn: 'true', address });
-
       this.getUserHandles(address);
 
       // TODO: should check to if is exist of profile
       // if (await this.getProfile() == false)
       //   this.register(address);
 
-      // Server.service.setIsLoggedIn(address);
-      // Server.service.setActiveAddress(address);
-      // publish('wallet-events');
+      Server.service.setIsLoggedIn(address);
+      Server.service.setActiveAddress(address);
+      publish('wallet-events');
 
       // your own process 
       // let process = await getDefaultProcess(address);

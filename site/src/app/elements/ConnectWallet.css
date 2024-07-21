@@ -1,0 +1,14 @@
+.connect-wallet {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.connect-wallet-address {
+  padding: 5px 10px;
+  /* color: gray; */
+  /* font-size: 13px; */
+  cursor: pointer;
+  border-radius: 5px;
+  border: 1px solid lightgray;
+  background-color: white;
+}

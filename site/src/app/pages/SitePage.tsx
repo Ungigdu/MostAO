@@ -10,6 +10,7 @@ import {
 import { Server } from '../../server/server';
 import { publish, subscribe } from '../util/event';
 import './SitePage.css';
+import ConnectWallet from '../elements/ConnectWallet';
 
 interface SitePageState {
   users: number;
@@ -37,8 +38,9 @@ class SitePage extends React.Component<{}, SitePageState> {
     this.onClose = this.onClose.bind(this);
 
     subscribe('wallet-events', () => {
-      const address = Server.service.isLoggedIn();
-      this.setState({ address })
+      // const address = Server.service.isLoggedIn();
+      // this.setState({ address })
+      this.start();
     });
   }
 
@@ -48,7 +50,7 @@ class SitePage extends React.Component<{}, SitePageState> {
 
   async start() {
     const address = await isLoggedIn();
-    // console.log("site page -> address:", address)
+    console.log("site page -> address:", address)
 
     Server.service.setIsLoggedIn(address);
     Server.service.setActiveAddress(address);
@@ -103,6 +105,7 @@ class SitePage extends React.Component<{}, SitePageState> {
           </div> */}
 
           <div className="app-page">
+            <ConnectWallet address={this.state.address} />
             <Outlet />
           </div>
         </div>
