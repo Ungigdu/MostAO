@@ -5,6 +5,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import './App.css';
 import HomePage from './pages/HomePage';
 import HandleDetail from './pages/HandleDetail';
+import ChatPage from './pages/ChatPage';
 
 class App extends React.Component<{}, {}> {
   constructor(props = {}) {
@@ -22,6 +23,8 @@ class App extends React.Component<{}, {}> {
             <Route index element={<HomePage />} />
             <Route path="*" element={<NotFoundPage />} />
             <Route path="/handle/:handleName" element={<HandleDetail />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/chat/:id" element={<ChatPage />} />
           </Route>
         </Routes>
       </HashRouter>

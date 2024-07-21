@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
 import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, spawnProcess } from '../util/util';
@@ -29,6 +29,7 @@ interface HomePageState {
   handles: HandleInfo[];
   handleName: any;
   bSignup: boolean;
+  navigate: string;
 }
 
 class HomePage extends React.Component<{}, HomePageState> {
@@ -52,6 +53,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       handles: [],
       handleName: '',
       bSignup: false,
+      navigate: '',
     };
 
     this.onQuestionYes = this.onQuestionYes.bind(this);
@@ -136,7 +138,17 @@ class HomePage extends React.Component<{}, HomePageState> {
       return;
     }
 
-    messageToAO(HANDLE_REGISTRY, { "handle": handleName }, 'Register');
+    this.setState({ loading: true });
+
+    const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName }, 'Register');
+    console.log("register -> response:", response)
+
+    if (response) {
+      // this.getUserHandles(address);
+      this.setState({ navigate: '/chat', loading: false });
+    } else {
+      this.setState({ alert: 'Failed to register a handle.', loading: false });
+    }
   }
 
   async disconnectWallet() {
@@ -173,7 +185,8 @@ class HomePage extends React.Component<{}, HomePageState> {
       if (!handle.handle) continue; // handle is empty string, will be removed.
 
       divs.push(
-        <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`} state={{ pid: handle.pid }}>
+        // <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`} state={{ pid: handle.pid }}>
+        <NavLink key={i} className='home-page-did' to={`/chat`} state={{ pid: handle.pid }}>
           <img
             className='home-page-portrait'
             src={generateAvatar(handle.pid)}
@@ -228,6 +241,9 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   render() {
+    if (this.state.navigate)
+      return <Navigate to={this.state.navigate} />;
+
     if (this.state.loading) {
       return (
         <div className='home-page-welcome'>
