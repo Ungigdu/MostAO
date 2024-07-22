@@ -1,35 +1,76 @@
-.chat-page {
-  display: flex;
-  flex-direction: column;
-  max-width: var(--page-max-width);
-  margin: auto;
-  padding-left: 30px;
-  padding-bottom: 30px;
-  row-gap: 20px;
-}
-
 .chat-page-container {
   display: flex;
+  height: 100vh;
+  overflow: hidden;
+  width: 100%;
+}
+
+.chat-page-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 18%;
+  margin-right: 10px;
+  padding-bottom: 6px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.chat-page-chat-list {
+  display: flex;
+  flex-direction: column;
+  row-gap: 15px;
+  flex-grow: 1;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-page-chat-container {
   display: flex;
   flex-direction: column;
-  width: 550px;
+  width: calc(100% - 18% - 10px);
   row-gap: 20px;
-  margin-top: -40px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .chat-page-messages-container {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  height: 450px;
+  flex-grow: 1;
   background-color: rgb(227, 248, 227);
   border-radius: 10px;
   border: 1px solid lightgray;
   padding: 20px 10px;
   overflow-y: auto;
+}
+
+.chat-page-send-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.settings-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
 }
 
 .chat-msg-line {
@@ -124,22 +165,14 @@
   border: 2px solid rgb(46, 75, 180);
 }
 
-.chat-page-chat-list {
-  display: flex;
-  flex-direction: column;
-  row-gap: 15px;
-  margin-right: 20px;
-  padding-bottom: 6px;
-  overflow-y: auto;
-}
-
 .chat-page-list {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-direction: row;
+  align-items: center;
   cursor: pointer;
   padding: 5px 10px;
   border-radius: 10px;
+  width: 100%;
 }
 
 .chat-page-list:hover {
@@ -154,6 +187,12 @@
   width: 45px;
   height: 45px;
   border-radius: 50%;
+  margin-right: 10px;
+}
+
+.chat-page-list-content {
+  display: flex;
+  flex-direction: column;
 }
 
 .chat-page-list-nickname {

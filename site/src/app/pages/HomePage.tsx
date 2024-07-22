@@ -11,9 +11,15 @@ import AlertModal from '../modals/AlertModal';
 
 declare let window: any;
 
-interface HandleInfo {
+export interface HandleProfile {
   handle: string;
   pid: string;
+  profile?: {
+    name: string;
+    avatar: string;
+    nickname: string;
+    [key: string]: any;
+  };
 }
 
 interface HomePageState {
@@ -26,7 +32,7 @@ interface HomePageState {
   isLoggedIn: string;
   address: string;
   process: string;
-  handles: HandleInfo[];
+  handles: { [handleName: string]: HandleProfile };
   handleName: any;
   bSignup: boolean;
   navigate: string;
@@ -50,7 +56,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       isLoggedIn: '',
       address: '',
       process: '',
-      handles: [],
+      handles: {},
       handleName: '',
       bSignup: false,
       navigate: '',
@@ -86,11 +92,14 @@ class HomePage extends React.Component<{}, HomePageState> {
       const response: Array<{ handle: string; pid: string }> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
       console.log("response:", JSON.stringify(response));
 
-      const handles: HandleInfo[] = response.map(item => ({ handle: item.handle, pid: item.pid }));
+      const handles: { [handleName: string]: HandleProfile } = {};
+      response.forEach((item) => {
+        handles[item.handle] = { handle: item.handle, pid: item.pid };
+      });
       this.setState({ handles, loading: false });
     } catch (error) {
       console.error("Error fetching handles:", error);
-      this.setState({ handles: [], loading: false }); // Set to empty array in case of error
+      this.setState({ handles: {}, loading: false }); // Set to empty array in case of error
     }
   }
   async connectWallet() {
@@ -177,20 +186,21 @@ class HomePage extends React.Component<{}, HomePageState> {
   renderDID() {
     const divs = [];
 
-    for (let i = 0; i < this.state.handles.length; i++) {
-      const handle = this.state.handles[i];
+    console.log("handles:", this.state.handles);
+    for (const handleName in this.state.handles) {
+      const handle = this.state.handles[handleName];
       if (!handle.handle) continue; // handle is empty string, will be removed.
 
       divs.push(
         // <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`} state={{ pid: handle.pid }}>
-        <NavLink key={i} className='home-page-did' to={`/chat`} state={{ pid: handle.pid }}>
+        <NavLink key={handleName} className='home-page-did' to={`/chat`} state={{ handles: this.state.handles, currentHandle: handleName }}>
           <img
             className='home-page-portrait'
             src={generateAvatar(handle.pid)}
           />
 
           <div className="home-page-nickname">
-            @{handle.handle}
+            @{handleName}
           </div>
         </NavLink>
       )
@@ -262,7 +272,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       )
     }
     // Sign up
-    else if (this.state.handles.length == 0) {
+    else if (Object.keys(this.state.handles).length === 0) {
       return (
         <div className='home-page-welcome'>
           {this.renderHeader()}
@@ -271,7 +281,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       )
     }
     // Pick a handle
-    else if (this.state.handles.length > 0) {
+    else if (Object.keys(this.state.handles).length > 0) {
       return (
         <div className='home-page-welcome'>
           {this.renderHeader()}
