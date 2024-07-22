@@ -90,7 +90,7 @@ class HomePage extends React.Component<{}, HomePageState> {
 
     try {
       const response: Array<{ handle: string; pid: string }> = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
-      console.log("response:", JSON.stringify(response));
+      // console.log("response:", JSON.stringify(response));
 
       const handles: { [handleName: string]: HandleProfile } = {};
       response.forEach((item) => {
@@ -184,16 +184,15 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   renderDID() {
-    const divs = [];
-
     console.log("handles:", this.state.handles);
+    const divs = [];
     for (const handleName in this.state.handles) {
       const handle = this.state.handles[handleName];
       if (!handle.handle) continue; // handle is empty string, will be removed.
 
       divs.push(
-        // <NavLink key={i} className='home-page-did' to={`/handle/${handle.handle}`} state={{ pid: handle.pid }}>
-        <NavLink key={handleName} className='home-page-did' to={`/chat`} state={{ handles: this.state.handles, currentHandle: handleName }}>
+        // <NavLink key={handleName} className='home-page-did' to={`/chat`} state={{ handles: this.state.handles, currentHandle: handleName }}>
+        <NavLink key={handleName} className='home-page-did' to={`/chat/${handleName}`}>
           <img
             className='home-page-portrait'
             src={generateAvatar(handle.pid)}

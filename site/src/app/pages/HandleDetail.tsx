@@ -9,23 +9,34 @@ import Loading from '../elements/Loading';
 import { subscribe } from '../util/event';
 
 const HandleDetail: React.FC = () => {
-  const { handleName } = useParams<{ handleName: string }>();
-  const location = useLocation();
-  const pid = (location.state as any).pid;
+  // const { handleName } = useParams<{ handleName: string }>();
+  // const location = useLocation();
+  // const pid = (location.state as any).pid;
+
   const [profile, setProfileData] = useState<any>(null);
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [otherHandleName, setOtherHandleName] = useState('');
+  const [pid, setPID] = useState('');
   const navigate = useNavigate();
 
   // Added by Kevin
+
+  const path = window.location.hash.slice(1);
+  const handle = path.substring(8);
+  // console.log("handle:", handle)
+
   let filterSelected = 0;
   const [profileUpdated, setProfileUpdated] = useState(false);
 
   useEffect(() => {
     const fetchProfileAndHistory = async () => {
       try {
+        let pid = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handle });
+        pid = pid[0].pid;
+        setPID(pid);
+        
         const response = await getProfile(pid);
         const profileData = response || [];
         setProfileData(profileData);
@@ -45,7 +56,7 @@ const HandleDetail: React.FC = () => {
     };
 
     fetchProfileAndHistory();
-  }, [handleName, profileUpdated]);
+  }, [handle, profileUpdated]);
 
   subscribe('profile-updated', () => {
     setProfileUpdated(true);
@@ -67,7 +78,7 @@ const HandleDetail: React.FC = () => {
     try {
       const response = await messageToAO(
         HANDLE_REGISTRY,
-        { handleA: handleName, handleB: otherHandleName },
+        { handleA: handle, handleB: otherHandleName },
         "EstablishSession"
       );
       console.log(response);
@@ -184,7 +195,7 @@ const HandleDetail: React.FC = () => {
         {renderActionButtons()}
 
         <div className="profile-page-name">{profile.name ? profile.name : 'Nickname'}</div>
-        <div className="profile-page-id">@{handleName}</div>
+        <div className="profile-page-id">@{handle}</div>
         <div className="profile-page-desc">{profile.bio ? profile.bio : 'This is a bio.'}</div>
         <div className="profile-page-pid">PID: {pid}</div>
 

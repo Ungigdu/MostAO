@@ -5,7 +5,7 @@ import {
   formatTimestamp, generateAvatar, getDataFromAO, getProfile, getWalletAddress,
   messageToAO, shortAddr, shortStr, timeOfNow
 } from '../util/util';
-import { AO_TWITTER } from '../util/consts';
+import { AO_TWITTER, HANDLE_REGISTRY } from '../util/consts';
 import Loading from '../elements/Loading';
 import { Navigate } from 'react-router-dom';
 import { publish, subscribe } from '../util/event';
@@ -30,12 +30,15 @@ interface ChatPageState {
   loading: boolean;
   address: string;
   friend: string;
-  handles: { [key: string]: HandleProfile };
+  // handles: { [key: string]: HandleProfile };
+  handles: any;
   currentHandle: string;
   showHandlesDropdown: boolean;
   friendHandle: string;
   chatList: any[];
   navigate: string;
+  handle: string;
+  pid: string;
 }
 
 class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
@@ -49,12 +52,14 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       loading: true,
       address: '',
       friend: '',
-      handles: {},
+      handles: '',
       currentHandle: '',
       showHandlesDropdown: false,
       friendHandle: '',
       chatList: [],
       navigate: '',
+      handle: '',
+      pid: '',
     };
 
     subscribe('go-chat', () => {
@@ -64,29 +69,32 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   componentDidMount() {
-    const state = this.props.location.state || {};
-    const handles = state.handles || {};
-    let currentHandle = state.currentHandle || '';
+    // const state = this.props.location.state || {};
+    // const handles = state.handles || {};
+    // let currentHandle = state.currentHandle || '';
 
-    console.log("handles:", handles);
-    console.log("currentHandle:", currentHandle);
-    if (!currentHandle && Object.keys(handles).length > 0) {
-      currentHandle = Object.keys(handles)[0];
-    }
+    // console.log("handles:", handles);
+    // console.log("currentHandle:", currentHandle);
+    // if (!currentHandle && Object.keys(handles).length > 0) {
+    //   currentHandle = Object.keys(handles)[0];
+    // }
 
-    this.setState({ handles, currentHandle }, () => {
-      this.start();
-    });
+    // this.setState({ handles, currentHandle }, () => {
+    //   this.start();
+    // });
+
+    // updated by Kevin
+    this.start();
   }
 
   componentDidUpdate(prevProps: ChatPageProps, prevState: ChatPageState) {
-    if (prevState.handles !== this.state.handles) {
-      localStorage.setItem('handles', JSON.stringify(this.state.handles));
-    }
+    // if (prevState.handles !== this.state.handles) {
+    //   localStorage.setItem('handles', JSON.stringify(this.state.handles));
+    // }
 
-    if (prevState.currentHandle !== this.state.currentHandle) {
-      localStorage.setItem('currentHandle', this.state.currentHandle);
-    }
+    // if (prevState.currentHandle !== this.state.currentHandle) {
+    //   localStorage.setItem('currentHandle', this.state.currentHandle);
+    // }
   }
 
   componentWillUnmount(): void {
@@ -97,38 +105,64 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     clearInterval(msg_timer);
 
     const path = window.location.hash.slice(1);
-    const friend = path.substring(6);
-    console.log("friend:", friend);
+    const handle = path.substring(6);
+    console.log("handle:", handle);
+
+    // const pid = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handle });
+    // console.log("pid:", pid)
 
     const address = await getWalletAddress();
-    console.log("me:", this.state.currentHandle);
+    console.log("address:", address)
 
-    const currentHandle = this.state.handles[this.state.currentHandle];
-    const myProfile = await getProfile(currentHandle.pid);
-    if (myProfile) {
-      this.setState(prevState => ({
-        handles: {
-          ...prevState.handles,
-          [this.state.currentHandle]: {
-            ...prevState.handles[this.state.currentHandle],
-            profile: myProfile
-          }
-        }
-      }));
+    const handles = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
+    console.log("handles:", handles)
+
+    let pid = '';
+    for (let i = 0; i < handles.length; i++) {
+      if (handle == handles[i].handle) {
+        pid = handles[i].pid;
+        break;
+      }
     }
 
-    this.setState({ address, friend });
-
-    if (friend) {
-      setTimeout(() => {
-        this.goDM();
-      }, 50);
-    } else {
-      setTimeout(() => {
-        this.getChatList();
-        this.setState({ loading: false });
-      }, 50);
+    if (!pid) {
+      this.setState({ alert: 'Your handle is not found.' });
+      return;
     }
+
+    this.setState({ handle, pid, address, handles });
+
+    setTimeout(() => {
+      this.getChatList();
+      this.setState({ loading: false });
+    }, 50);
+
+    // const currentHandle = this.state.handles[this.state.currentHandle];
+    // const myProfile = await getProfile(currentHandle.pid);
+    // if (myProfile) {
+    //   this.setState(prevState => ({
+    //     handles: {
+    //       ...prevState.handles,
+    //       [this.state.currentHandle]: {
+    //         ...prevState.handles[this.state.currentHandle],
+    //         profile: myProfile
+    //       }
+    //     }
+    //   }));
+    // }
+
+    // this.setState({ address, friend: handle });
+
+    // if (handle) {
+    //   setTimeout(() => {
+    //     this.goDM();
+    //   }, 50);
+    // } else {
+    //   setTimeout(() => {
+    //     this.getChatList();
+    //     this.setState({ loading: false });
+    //   }, 50);
+    // }
   }
 
   async goDM() {
@@ -136,6 +170,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     let friendProfile = await getProfile(this.state.friend);
     console.log("friendProfile:", friendProfile);
+
+    // for test
+    if (!friendProfile) return;
 
     if (friendProfile.length === 0) return;
 
@@ -161,17 +198,19 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   async getChatList() {
-    if (this.state.chatList.length > 0 || !this.state.currentHandle) return;
+    // if (this.state.chatList.length > 0 || !this.state.currentHandle) return;
 
     const data = { address: this.state.address };
-    console.log("getChatList for process of pid:", this.state.handles[this.state.currentHandle].pid);
-    const chatList = await getDataFromAO(this.state.handles[this.state.currentHandle].pid, 'GetChatList', data);
+    // console.log("getChatList for process of pid:", this.state.pid);
+
+    const chatList = await getDataFromAO(this.state.pid, 'GetChatList', data);
     console.log("getChatList:", chatList);
 
     this.setState({ chatList });
 
     if (chatList.length > 0)
-      this.goChat(chatList[0].sessionID);
+      // this.goChat(chatList[0].sessionID);
+      this.setState({ loading: false });
     else
       this.setState({ loading: false });
   }
@@ -316,16 +355,33 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   renderHandleDropdown() {
     if (!this.state.showHandlesDropdown) return null;
 
-    return (
-      <div className="handle-dropdown">
-        {Object.keys(this.state.handles).map(handleKey => (
-          <div key={handleKey} onClick={() => this.switchHandle(handleKey)}>
-            <img src={generateAvatar(this.state.handles[handleKey].pid)} alt={handleKey} className="avatar-small" />
-            {handleKey}
-          </div>
-        ))}
-      </div>
-    );
+    // return (
+    //   <div className="handle-dropdown">
+    //     {Object.keys(this.state.handles).map(handleKey => (
+    //       <div key={handleKey} onClick={() => this.switchHandle(handleKey)}>
+    //         <img src={generateAvatar(this.state.handles[handleKey].pid)} alt={handleKey} className="avatar-small" />
+    //         {handleKey}
+    //       </div>
+    //     ))}
+    //   </div>
+    // );
+
+
+    const divs = [];
+    const list = this.state.handles;
+
+    for (let i = 0; i < list.length; i++) {
+      const data = list[i];
+
+      divs.push(
+        <div key={i} onClick={() => this.switchHandle(data.handle)}>
+          <img src={generateAvatar(data.pid)} className="avatar-small" />
+          {data.handle}
+        </div>
+      );
+    }
+
+    return divs;
   }
 
   renderSend() {
@@ -348,11 +404,11 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     if (this.state.navigate)
       return <Navigate to={this.state.navigate} />;
 
-    const currentHandle = this.state.handles[this.state.currentHandle];
+    // const currentHandle = this.state.handles[this.state.currentHandle];
 
-    if (!currentHandle) {
-      return <Loading />;
-    }
+    // if (!currentHandle) {
+    //   return <Loading />;
+    // }
 
     return (
       <div className="chat-page">
@@ -365,18 +421,24 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
             </div>
             <div className='profile-section'>
               <div className="current-handle" onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}>
-                <img src={generateAvatar(currentHandle.pid)} alt="current handle" className="avatar-small" />
-                {currentHandle.profile?.name || `@${currentHandle.handle}`}
+                <img src={generateAvatar(this.state.pid)} alt="current handle" className="avatar-small" />
+                {/* {currentHandle.profile?.name || `@${currentHandle.handle}`} */}
+                {this.state.handle}
               </div>
-              {this.renderHandleDropdown()}
-              <div className="settings-icon" onClick={() => this.props.navigate(`/handle/${currentHandle.handle}`, { state: { pid: currentHandle.pid } })}>
+
+              <div className="handle-dropdown">
+                {this.renderHandleDropdown()}
+              </div>
+              
+              {/* <div className="settings-icon" onClick={() => this.props.navigate(`/handle/${currentHandle.handle}`, { state: { pid: currentHandle.pid } })}> */}
+              <div className="settings-icon" onClick={() => this.props.navigate(`/handle/${this.state.handle}`)}>
                 <BsGear size={24} />
               </div>
             </div>
           </div>
 
           <div className='chat-page-chat-container'>
-            <div>Public Chatroom</div>
+            {/* <div>Public Chatroom</div> */}
             <div id='scrollableDiv' className="chat-page-messages-container">
               {this.renderMessages()}
             </div>
