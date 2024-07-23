@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO } from '../util/util';
+import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, getWalletPublicKey } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
@@ -145,8 +145,9 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
 
     this.setState({ loading: true });
-
-    const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName }, 'Register');
+    const pubkey = await getWalletPublicKey();
+    console.log("register -> pubkey:", pubkey);
+    const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName, "pubkey": pubkey }, 'Register');
     console.log("register -> response:", response)
 
     if (response) {
