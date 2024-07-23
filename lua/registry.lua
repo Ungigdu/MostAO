@@ -1,9 +1,10 @@
 local json = require("json")
 local sqlite3 = require("lsqlite3")
 local SQLITE_WASM64_MODULE = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"
-local HANDLE_LUA_CODE = [=[
+local HANDLE_LUA_CODE_TEMPLATE = [=[
 local json = require("json")
 local profiles = {}
+pubkey = "__PUBKEY__"
 REGISTRY_PROCESS_ID = "oH5zaOmPCdCL_N2Mn79qqwtoCLXS2y6gcXv7Ohfmh-k"
 local sqlite3 = require("lsqlite3")
 DB = DB or sqlite3.open_memory()
@@ -11,7 +12,8 @@ DB = DB or sqlite3.open_memory()
 DB:exec [[
   CREATE TABLE IF NOT EXISTS chatList (
     sessionID TEXT PRIMARY KEY,
-    otherHandle TEXT NOT NULL,
+    otherHandleName TEXT NOT NULL,
+    otherHandleID TEXT NOT NULL,
     lastMessageTime INTEGER,
     lastViewedTime INTEGER
   );
@@ -63,7 +65,39 @@ Handlers.add(
     "GetProfile",
     Handlers.utils.hasMatchingTag("Action", "GetProfile"),
     function(msg)
-        Handlers.utils.reply(json.encode(profiles))(msg)
+        local completeProfile = profiles
+        completeProfile.pubkey = pubkey
+        Handlers.utils.reply(json.encode(completeProfile))(msg)
+    end
+)
+
+Handlers.add(
+    "RelayMessage",
+    Handlers.utils.hasMatchingTag("Action", "RelayMessage"),
+    function(msg)
+        local wrappedMessage = json.decode(msg.Data)
+
+        if not authorizeAndReply(msg, ao.env.Process.Tags["MostAO-Handle-Owner"], 'Unauthorized attempt to relay message', Handlers.utils.reply) then
+            return
+        end
+
+        if not wrappedMessage.Target or not wrappedMessage.Data or not wrappedMessage.Tags then
+            print('Invalid WrappedMessage format')
+            Handlers.utils.reply(json.encode({
+                status = "error",
+                message = "Invalid WrappedMessage format"
+            }))(msg)
+            return
+        end
+
+        ao.send({
+            Target = wrappedMessage.Target,
+            Data = wrappedMessage.Data,
+            Tags = wrappedMessage.Tags
+        })
+
+        print('Message relayed to target process')
+        Handlers.utils.reply(json.encode({ status = "success" }))(msg)
     end
 )
 
@@ -78,7 +112,7 @@ Handlers.add(
         end
 
         local stmt = DB:prepare [[
-          REPLACE INTO chatList (sessionID, otherHandle) VALUES (:sessionID, :otherHandle);
+          REPLACE INTO chatList (sessionID, otherHandleName, otherHandleID) VALUES (:sessionID, :otherHandleName, :otherHandleID);
         ]]
 
         if not stmt then
@@ -87,7 +121,8 @@ Handlers.add(
 
         stmt:bind_names({
             sessionID = data.sessionID,
-            otherHandle = data.otherHandle
+            otherHandleName = data.otherHandleName,
+            otherHandleID = data.otherHandleID,
             -- lastMessageTime = data.lastMessageTime,
             -- lastViewedTime = data.lastViewedTime
         })
@@ -110,7 +145,7 @@ Handlers.add(
         -- end
 
         local stmt = DB:prepare [[
-          SELECT sessionID, otherHandle, lastMessageTime, lastViewedTime FROM chatList;
+          SELECT sessionID, otherHandleName, otherHandleID, lastMessageTime, lastViewedTime FROM chatList;
         ]]
 
         if not stmt then
@@ -338,7 +373,16 @@ DB:exec [[
     FOREIGN KEY (handleA) REFERENCES handles(handle),
     FOREIGN KEY (handleB) REFERENCES handles(handle)
   );
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    task_id TEXT PRIMARY KEY,
+    metadata TEXT NOT NULL
+  );
 ]]
+
+local function generateUniqueID()
+    return tostring(os.time()) .. tostring(math.random(100000, 999999))
+end
 
 local function query(stmt)
     local rows = {}
@@ -423,8 +467,31 @@ Handlers.add(
         print('Registering handle: ' .. data.handle)
         -- print('PID: ' .. data.pid)
         print('Owner: ' .. msg.From)
+
+        local task_id = generateUniqueID()
+        local metadata = json.encode({
+            pubkey = data.pubkey
+        })
+
+        local taskStmt = DB:prepare [[
+            INSERT INTO tasks (task_id, metadata) VALUES (:task_id, :metadata);
+        ]]
+
+        if not taskStmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        taskStmt:bind_names({
+            task_id = task_id,
+            metadata = metadata
+        })
+
+        taskStmt:step()
+        taskStmt:reset()
+
         local spawnMessage = {
             Tags = {
+                { name = "MostAO-Task-ID",      value = task_id },
                 { name = "MostAO-Handle-Name",  value = data.handle },
                 { name = "MostAO-Handle-Owner", value = msg.From },
                 { name = "Name",                value = "MostAO-Handle" }
@@ -441,10 +508,31 @@ Handlers.add(
         local pid = msg.Tags.Process
         local owner = msg.Tags["MostAO-Handle-Owner"]
         local handle = msg.Tags["MostAO-Handle-Name"]
+        local task_id = msg.Tags["MostAO-Task-ID"]
 
         print('Spawned Done!')
 
+        local taskStmt = DB:prepare [[
+            SELECT metadata FROM tasks WHERE task_id = :task_id;
+        ]]
+
+        if not taskStmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        taskStmt:bind_names({ task_id = task_id })
+        local taskRows = query(taskStmt)
+        taskStmt:reset()
+
+        if #taskRows == 0 then
+            error("Task not found for task_id: " .. task_id)
+        end
+
+        local metadata = json.decode(taskRows[1].metadata)
+        print('Metadata: ' .. json.encode(metadata))
         if handle then
+            local pubkey = metadata.pubkey
+
             local stmt = DB:prepare [[
               REPLACE INTO handles (handle, pid, owner) VALUES (:handle, :pid, :owner);
             ]]
@@ -458,14 +546,16 @@ Handlers.add(
                 pid = pid,
                 owner = owner
             })
+            local handleLuaCode = HANDLE_LUA_CODE_TEMPLATE:gsub("__PUBKEY__", pubkey)
             local result = ao.send({
                 Target = pid,
                 Action = "Eval",
-                Data = HANDLE_LUA_CODE
+                Data = handleLuaCode
             })
-            print("result: " .. json.encode(result))
             stmt:step()
             stmt:reset()
+
+            print('Handle code injected for ' .. handle)
             Handlers.utils.reply("Handle Spawn Success")(msg)
         else
             local handleA_name = msg.Tags["Session-HandleA-Name"]
