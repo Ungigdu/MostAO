@@ -495,7 +495,7 @@ export async function getDataFromAO(
   // console.log('action', action);
   // console.log('result', result);
 
-  const resp = result.Messages.length > 0 ? result.Messages[0].Data : null;
+  const resp = result.Messages?.length > 0 ? result.Messages[0].Data : null;
 
   if (resp) {
   const end = performance.now();

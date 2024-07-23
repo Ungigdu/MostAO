@@ -5,13 +5,13 @@ import {
   formatTimestamp, generateAvatar, getDataFromAO, getProfile, getWalletAddress,
   messageToAO, shortAddr, shortStr, timeOfNow
 } from '../util/util';
-import { AO_TWITTER, HANDLE_REGISTRY } from '../util/consts';
+import { HANDLE_REGISTRY } from '../util/consts';
 import Loading from '../elements/Loading';
 import { Navigate } from 'react-router-dom';
 import { publish, subscribe } from '../util/event';
 import { BsArrowLeftCircleFill, BsGear } from 'react-icons/bs';
 import { withRouter } from '../util/withRouter';
-import { HandleProfile } from './HomePage';
+import { decryptAESKeyWithPlugin, encryptMessageWithAES, generateAESKey, prepareSessionKeyData } from '../util/crypto';
 
 declare let window: any;
 let msg_timer: any;
@@ -35,10 +35,12 @@ interface ChatPageState {
   currentHandle: string;
   showHandlesDropdown: boolean;
   friendHandle: string;
-  chatList: any[];
+  sessions: any[];
   navigate: string;
   handle: string;
   pid: string;
+  currentSession: any;
+  profiles: { [key: string]: any };
 }
 
 class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
@@ -56,10 +58,12 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       currentHandle: '',
       showHandlesDropdown: false,
       friendHandle: '',
-      chatList: [],
+      sessions: [],
       navigate: '',
       handle: '',
       pid: '',
+      currentSession: null,
+      profiles: {},
     };
 
     subscribe('go-chat', () => {
@@ -101,6 +105,14 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     clearInterval(msg_timer);
   }
 
+  // useEffect(() => {
+  //   const GetCurrentKeys = async () => {
+  //     const keys = await getDataFromAO(this.)
+  //   }
+  //   GetCurrentKeys();
+  // }, [this.state.currentSessionID]);
+
+
   async start() {
     clearInterval(msg_timer);
 
@@ -124,13 +136,15 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         break;
       }
     }
+    const myProfile = await getProfile(pid);
+    console.log("myProfile:", myProfile);
 
     if (!pid) {
       this.setState({ alert: 'Your handle is not found.' });
       return;
     }
 
-    this.setState({ handle, pid, address, handles });
+    this.setState({ handle, pid, address, handles, profiles: { [handle]: myProfile } });
 
     setTimeout(() => {
       this.getChatList();
@@ -203,23 +217,33 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     const data = { address: this.state.address };
     // console.log("getChatList for process of pid:", this.state.pid);
 
-    const chatList = await getDataFromAO(this.state.pid, 'GetChatList', data);
-    console.log("getChatList:", chatList);
+    const sessions = await getDataFromAO(this.state.pid, 'GetChatList', data);
+    console.log("getChatList:", sessions);
 
-    this.setState({ chatList });
+    const profiles = { ...this.state.profiles };
+    for (const chat of sessions) {
+      if (!profiles[chat.otherHandleID]) {
+        const profile = await getProfile(chat.otherHandleID);
+        profiles[chat.otherHandleName] = profile;
+      }
+    }
 
-    if (chatList.length > 0)
+    if (sessions.length > 0)
       // this.goChat(chatList[0].sessionID);
-      this.setState({ loading: false });
+      this.setState({ sessions, profiles, loading: false });
     else
       this.setState({ loading: false });
   }
 
   async getMessages() {
+    const { currentSession } = this.state;
+    if (!currentSession) return;
     console.log("DM messages -->");
-    const data = { friend: this.state.friend, address: this.state.address };
-    const messages = await getDataFromAO(AO_TWITTER, 'GetMessages', data);
+    const data = { from: 0, until: timeOfNow(), limit: 100, order: 'DESC' };
+
+    const messages = await getDataFromAO(currentSession.sessionID, 'QueryMessage', data);
     console.log("messages:", messages);
+    if (!messages) return;
 
     this.setState({ messages, loading: false });
     setTimeout(() => {
@@ -237,23 +261,22 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   renderChatList() {
     // if (this.state.loading)
     //   return (<Loading />);
-
     const divs = [];
-    const list = this.state.chatList;
+    const { sessions, currentSession } = this.state;
 
-    for (let i = 0; i < list.length; i++) {
-      const data = list[i];
-      const selected = false;
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i];
+      const selected = currentSession && session.sessionID === currentSession.sessionID;
 
       divs.push(
         <div
           key={i}
-          className={`chat-page-list ${selected && 'selected'}`}
-        // onClick={() => this.goChat(data.participant)}
+          className={`chat-page-list ${selected ? 'selected' : ''}`}
+          onClick={() => this.setState({ currentSession: session }, this.getMessages)}
         >
-          <img className='chat-page-list-portrait' src={generateAvatar(data.sessionID)} />
+          <img className='chat-page-list-portrait' src={generateAvatar(session.otherHandleID)} />
           <div>
-            <div className="chat-page-list-nickname">{data.otherHandle}</div>
+            <div className="chat-page-list-nickname">{session.otherHandleName}</div>
             {/* <div className="chat-page-list-addr">{shortAddr(data.participant, 4)}</div> */}
           </div>
         </div>
@@ -316,11 +339,54 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       this.setState({ alert: 'Message can be up to 500 characters long.' });
       return;
     }
+    this.setState({ msg: '' });
+    const { currentSession, profiles, handle, pid } = this.state;
+    const keys = await getDataFromAO(currentSession.sessionID, 'GetCurrentKeys', {});
+    let generation = 0;
+    let aesKey;
+
+    if (!this.state.messages.length) {
+      if (!keys || keys.length === 0) {
+        console.log("keys not found");
+
+        aesKey = await generateAESKey();
+        console.log("generated AES key:", aesKey);
+        const ownPublicKey = profiles[handle].pubkey;
+        console.log("ownPublicKey:", ownPublicKey);
+        console.log("currentSession.otherHandleID :", currentSession.otherHandleName);
+        const otherPublicKey = profiles[currentSession.otherHandleName].pubkey;
+        console.log("otherPublicKey:", otherPublicKey);
+
+        if (!ownPublicKey || !otherPublicKey) {
+          this.setState({ alert: 'Public keys not found.' });
+          return;
+        }
+        const sessionKeyData = await prepareSessionKeyData(aesKey, ownPublicKey, otherPublicKey);
+        console.log("session key data:", sessionKeyData);
+
+        const relaySessionKey = {
+          Target: currentSession.sessionID,
+          Data: JSON.stringify(sessionKeyData),
+          Tags: [{ name: "Action", value: "RotateSessionKey" }]
+        };
+        await messageToAO(pid, relaySessionKey, 'RelayMessage');
+      }
+    } else {
+      generation = keys[0].generation;
+      aesKey = await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_a);
+    }
+
+    const encryptedMessage = await encryptMessageWithAES(msg, aesKey);
+    console.log("encryptedMessage:", encryptedMessage);
+    const relayMessage = {
+      Target: currentSession.sessionID,
+      Data: JSON.stringify({ content: encryptedMessage, generation: generation }),
+      Tags: [{ name: "Action", value: "SendMessage" }]
+    };
 
     this.setState({ msg: '' });
 
-    const data = { address: this.state.address, friend: this.state.friend, message: msg, time: timeOfNow() };
-    await messageToAO(AO_TWITTER, data, 'SendMessage');
+    await messageToAO(pid, relayMessage, 'RelayMessage');
 
     setTimeout(() => {
       this.scrollToBottom();
@@ -429,7 +495,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
               <div className="handle-dropdown">
                 {this.renderHandleDropdown()}
               </div>
-              
+
               {/* <div className="settings-icon" onClick={() => this.props.navigate(`/handle/${currentHandle.handle}`, { state: { pid: currentHandle.pid } })}> */}
               <div className="settings-icon" onClick={() => this.props.navigate(`/handle/${this.state.handle}`)}>
                 <BsGear size={24} />
