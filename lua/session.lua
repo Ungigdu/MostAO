@@ -1,12 +1,11 @@
 local json = require("json")
 local sqlite3 = require("lsqlite3")
-REGISTRY_PROCESS_ID = "oH5zaOmPCdCL_N2Mn79qqwtoCLXS2y6gcXv7Ohfmh-k"
 
 DB = DB or sqlite3.open_memory()
 
 DB:exec [[
   CREATE TABLE IF NOT EXISTS session_keys (
-    generation INTEGER PRIMARY KEY,
+    generation INTEGER PRIMARY KEY AUTOINCREMENT,
     encrypted_sk_by_a TEXT,
     pubkey_a TEXT,
     encrypted_sk_by_b TEXT,
@@ -15,7 +14,7 @@ DB:exec [[
 
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from TEXT,
+    sender TEXT,
     generation INTEGER,
     timestamp INTEGER,
     content TEXT
@@ -57,10 +56,9 @@ Handlers.add(
             return
         end
 
-        local generation = os.time()
         local stmt = DB:prepare [[
-          INSERT INTO session_keys (generation, encrypted_sk_by_a, pubkey_a, encrypted_sk_by_b, pubkey_b)
-          VALUES (:generation, :encrypted_sk_by_a, :pubkey_a, :encrypted_sk_by_b, :pubkey_b);
+          INSERT INTO session_keys (encrypted_sk_by_a, pubkey_a, encrypted_sk_by_b, pubkey_b)
+          VALUES (:encrypted_sk_by_a, :pubkey_a, :encrypted_sk_by_b, :pubkey_b);
         ]]
 
         if not stmt then
@@ -68,7 +66,6 @@ Handlers.add(
         end
 
         stmt:bind_names({
-            generation = generation,
             encrypted_sk_by_a = data.encrypted_sk_by_a,
             pubkey_a = data.pubkey_a,
             encrypted_sk_by_b = data.encrypted_sk_by_b,
@@ -134,8 +131,8 @@ Handlers.add(
         end
 
         local stmt = DB:prepare [[
-      INSERT INTO messages (from, generation, timestamp, content)
-      VALUES (:from, :generation, :timestamp, :content);
+      INSERT INTO messages (sender, generation, timestamp, content)
+      VALUES (:sender, :generation, :timestamp, :content);
     ]]
 
         if not stmt then
@@ -143,9 +140,9 @@ Handlers.add(
         end
 
         stmt:bind_names({
-            from = msg.From,
+            sender = msg.From,
             generation = data.generation,
-            timestamp = os.time(),
+            timestamp = msg.Timestamp / 1000,
             content = data.content
         })
 
@@ -180,7 +177,7 @@ Handlers.add(
         end
 
         stmt:bind_names({
-            start_time = data.from,
+            start_time = data["from"],
             end_time = data["until"],
             limit = data.limit
         })
