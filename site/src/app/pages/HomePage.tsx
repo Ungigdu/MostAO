@@ -8,6 +8,7 @@ import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
 import { HANDLE_REGISTRY } from '../util/consts';
 import AlertModal from '../modals/AlertModal';
+import Logo from '../elements/Logo';
 
 declare let window: any;
 
@@ -152,7 +153,7 @@ class HomePage extends React.Component<{}, HomePageState> {
 
     if (response) {
       // this.getUserHandles(address);
-      this.setState({ navigate: '/chat', loading: false });
+      this.setState({ navigate: '/chat/' + handleName, loading: false });
     } else {
       this.setState({ alert: 'Failed to register a handle.', loading: false });
     }
@@ -215,15 +216,6 @@ class HomePage extends React.Component<{}, HomePageState> {
     return divs;
   }
 
-  renderHeader() {
-    return (
-      <div className='home-page-welcome-logo-row'>
-        <img className='home-page-welcome-logo' src='/logo-ao.png' />
-        <div className='app-logo-text'>MostAO</div>
-      </div>
-    )
-  }
-
   renderSignUp() {
     return (
       <div>
@@ -254,7 +246,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     if (this.state.loading) {
       return (
         <div className='home-page-welcome'>
-          {this.renderHeader()}
+          <Logo />
           <Loading marginTop='50px' />
         </div>
       )
@@ -263,7 +255,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       // Connect to a wallet
       return (
         <div className='home-page-welcome'>
-          {this.renderHeader()}
+          <Logo />
           <div className="home-page-slug">Messages and other stuff transmitted by AO</div>
           <button className="home-connect-button" onClick={() => this.connectWallet()}>
             Connect ArConnect
@@ -275,7 +267,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     else if (Object.keys(this.state.handles).length === 0) {
       return (
         <div className='home-page-welcome'>
-          {this.renderHeader()}
+          <Logo />
           {this.renderSignUp()}
         </div>
       )
@@ -284,7 +276,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     else if (Object.keys(this.state.handles).length > 0) {
       return (
         <div className='home-page-welcome'>
-          {this.renderHeader()}
+          <Logo />
           {this.state.bSignup && this.renderSignUp()}
 
           <div className='home-page-did-title'>You already have these handles.

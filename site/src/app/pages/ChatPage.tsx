@@ -12,6 +12,7 @@ import { publish, subscribe } from '../util/event';
 import { BsArrowLeftCircleFill, BsGear } from 'react-icons/bs';
 import { withRouter } from '../util/withRouter';
 import { decryptAESKeyWithPlugin, decryptMessageWithAES, encryptMessageWithAES, generateAESKey, prepareSessionKeyData } from '../util/crypto';
+import Logo from '../elements/Logo';
 
 declare let window: any;
 let msg_timer: any;
@@ -170,7 +171,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     if (keys && keys.length > 0) {
       for (const key of keys) {
         if (keys.pubkey_a === profiles[handle].pubkey) {
-        key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_a);
+          key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_a);
         }
         else if (keys.pubkey_b === profiles[handle].pubkey) {
           key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_b);
@@ -187,11 +188,14 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     const handle = path.substring(6);
     console.log("handle:", handle);
 
-    // const pid = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handle });
-    // console.log("pid:", pid)
+    setTimeout(() => {
+      this.getInfo(handle);
+    }, 1000);
+  }
 
+  async getInfo(handle: string) {
     const address = await getWalletAddress();
-    console.log("address:", address)
+    // console.log("address:", address)
 
     const handles = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
     console.log("handles:", handles)
@@ -203,13 +207,15 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         break;
       }
     }
-    const myProfile = await getProfile(pid);
-    console.log("myProfile:", myProfile);
+    console.log("pid:", pid)
 
     if (!pid) {
-      this.setState({ alert: 'Your handle is not found.' });
+      this.setState({ alert: 'Your handle is not found. Please refresh this page.', loading: false });
       return;
     }
+
+    const myProfile = await getProfile(pid);
+    console.log("myProfile:", myProfile);
 
     this.setState({ handle, pid, address, handles, profiles: { [handle]: myProfile } });
 
@@ -217,33 +223,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       this.getChatList();
       this.setState({ loading: false });
     }, 50);
-
-    // const currentHandle = this.state.handles[this.state.currentHandle];
-    // const myProfile = await getProfile(currentHandle.pid);
-    // if (myProfile) {
-    //   this.setState(prevState => ({
-    //     handles: {
-    //       ...prevState.handles,
-    //       [this.state.currentHandle]: {
-    //         ...prevState.handles[this.state.currentHandle],
-    //         profile: myProfile
-    //       }
-    //     }
-    //   }));
-    // }
-
-    // this.setState({ address, friend: handle });
-
-    // if (handle) {
-    //   setTimeout(() => {
-    //     this.goDM();
-    //   }, 50);
-    // } else {
-    //   setTimeout(() => {
-    //     this.getChatList();
-    //     this.setState({ loading: false });
-    //   }, 50);
-    // }
   }
 
   async goDM() {
@@ -287,6 +266,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     const sessions = await getDataFromAO(this.state.pid, 'GetChatList', data);
     console.log("getChatList:", sessions);
 
+    if (!sessions) return;
+    
     const profiles = { ...this.state.profiles };
     for (const chat of sessions) {
       if (!profiles[chat.otherHandleID]) {
@@ -579,11 +560,14 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     if (this.state.navigate)
       return <Navigate to={this.state.navigate} />;
 
-    // const currentHandle = this.state.handles[this.state.currentHandle];
-
-    // if (!currentHandle) {
-    //   return <Loading />;
-    // }
+    if (this.state.loading) {
+      return (
+        <div className='home-page-welcome'>
+          <Logo />
+          <Loading marginTop='50px' />
+        </div>
+      )
+    }
 
     return (
       <div className="chat-page">
@@ -595,7 +579,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
               {this.renderChatList()}
             </div>
             <div className='profile-section'>
-              <div className="current-handle" onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}>
+              <div className="chat-page-my-profile" onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}>
                 <img src={generateAvatar(this.state.pid)} alt="current handle" className="avatar-small" />
                 {/* {currentHandle.profile?.name || `@${currentHandle.handle}`} */}
                 {this.state.handle}

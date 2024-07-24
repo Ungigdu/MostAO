@@ -7,6 +7,7 @@ import { HANDLE_REGISTRY } from '../util/consts';
 import './HandleDetail.css';
 import Loading from '../elements/Loading';
 import { subscribe } from '../util/event';
+import Logo from '../elements/Logo';
 
 const HandleDetail: React.FC = () => {
   // const { handleName } = useParams<{ handleName: string }>();
@@ -71,7 +72,8 @@ const HandleDetail: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/');
+    // navigate('/');
+    window.history.back();
   };
 
   const handleEstablishSession = async () => {
@@ -98,7 +100,7 @@ const HandleDetail: React.FC = () => {
   if (loading) {
     return (
       <div className='home-page-welcome'>
-        {renderHeader()}
+        <Logo />
         <Loading marginTop='50px' />
       </div>
     )
@@ -125,15 +127,6 @@ const HandleDetail: React.FC = () => {
     }
 
     return divs;
-  }
-
-  function renderHeader() {
-    return (
-      <div className='home-page-welcome-logo-row'>
-        <img className='home-page-welcome-logo' src='/logo-ao.png' />
-        <div className='app-logo-text'>MostAO</div>
-      </div>
-    )
   }
 
   function renderActionButtons() {

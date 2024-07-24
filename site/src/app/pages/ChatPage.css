@@ -33,6 +33,18 @@
   box-sizing: border-box;
 }
 
+.chat-page-my-profile {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 25px;
+}
+
+.chat-page-my-profile:hover {
+  background-color: lightgray;
+}
+
 .chat-page-chat-container {
   display: flex;
   flex-direction: column;
