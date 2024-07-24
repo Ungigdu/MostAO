@@ -165,10 +165,16 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   async getCurrentKeys(sessionID: string): Promise<SessionKey[]> {
+    const { handle, profiles } = this.state;
     const keys = await getDataFromAO(sessionID, 'GetCurrentKeys', {});
     if (keys && keys.length > 0) {
       for (const key of keys) {
+        if (keys.pubkey_a === profiles[handle].pubkey) {
         key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_a);
+        }
+        else if (keys.pubkey_b === profiles[handle].pubkey) {
+          key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_b);
+        }
       }
     }
     return keys;
@@ -471,7 +477,12 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       }
     } else {
       generation = keys[0].generation;
-      aesKey = await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_a);
+      if (keys[0].generation === currentSession.keys[0].generation) {
+        if (!currentSession.aesKey) {
+          currentSession.aesKey = keys[0].pubkey_a === profiles[handle].pubkey ? await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_a) : await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_b);
+        }
+        aesKey = currentSession.aesKey;
+      }
     }
 
     const encryptedMessage = await encryptMessageWithAES(msg, aesKey);
