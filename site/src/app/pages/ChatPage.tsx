@@ -11,7 +11,7 @@ import { Navigate } from 'react-router-dom';
 import { publish, subscribe } from '../util/event';
 import { BsArrowLeftCircleFill, BsGear } from 'react-icons/bs';
 import { withRouter } from '../util/withRouter';
-import { decryptAESKeyWithPlugin, encryptMessageWithAES, generateAESKey, prepareSessionKeyData } from '../util/crypto';
+import { decryptAESKeyWithPlugin, decryptMessageWithAES, encryptMessageWithAES, generateAESKey, prepareSessionKeyData } from '../util/crypto';
 
 declare let window: any;
 let msg_timer: any;
@@ -22,9 +22,26 @@ interface ChatPageProps {
   params: any;
 }
 
+interface SessionKey {
+  encrypted_sk_by_a: string;
+  pubkey_a: string;
+  encrypted_sk_by_b: string;
+  pubkey_b: string;
+  generation: number;
+}
+
+interface Session {
+  otherHandleName: string;
+  sessionID: string;
+  otherHandleID: string;
+  keys?: SessionKey[];
+  aesKey?: Uint8Array;
+}
+
 interface ChatPageState {
   msg: string;
   messages: any[];
+  decryptedMessages: any[];
   question: string;
   alert: string;
   loading: boolean;
@@ -35,11 +52,11 @@ interface ChatPageState {
   currentHandle: string;
   showHandlesDropdown: boolean;
   friendHandle: string;
-  sessions: any[];
+  sessions: Session[];
   navigate: string;
   handle: string;
   pid: string;
-  currentSession: any;
+  currentSession: Session;
   profiles: { [key: string]: any };
 }
 
@@ -49,6 +66,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     this.state = {
       msg: '',
       messages: [],
+      decryptedMessages: [],
       question: '',
       alert: '',
       loading: true,
@@ -99,19 +117,62 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     // if (prevState.currentHandle !== this.state.currentHandle) {
     //   localStorage.setItem('currentHandle', this.state.currentHandle);
     // }
+    if (prevState.messages !== this.state.messages) {
+      this.decryptAllMessages();
+    }
   }
+
+  async decryptAllMessages() {
+    const { messages, currentSession, handle, profiles } = this.state;
+    const decryptedMessages = await Promise.all(messages.map(async (data) => {
+      console.log("data:", data);
+      console.log("currentSession:", currentSession);
+      const sessionKey = currentSession.keys?.find(key => key.generation === data.generation);
+      console.log("sessionKey:", sessionKey);
+      let decryptedMessage = '';
+
+      if (sessionKey) {
+        if (!currentSession.aesKey) {
+          // decrypt with RSA
+          if (sessionKey.pubkey_a === profiles[handle].pubkey) {
+            currentSession.aesKey = await decryptAESKeyWithPlugin(sessionKey.encrypted_sk_by_a);
+          } else if (sessionKey.pubkey_b === profiles[handle].pubkey) {
+            currentSession.aesKey = await decryptAESKeyWithPlugin(sessionKey.encrypted_sk_by_b);
+          }
+          try {
+            decryptedMessage = await decryptMessageWithAES(data.content, currentSession.aesKey);
+          } catch (error) {
+            console.error("Failed to decrypt message:", error);
+            decryptedMessage = "[Failed to decrypt message]";
+          }
+        }
+      } else {
+        decryptedMessage = "[No key available]";
+      }
+
+      return {
+        ...data,
+        decryptedMessage
+      };
+    }));
+
+    this.setState({ decryptedMessages, currentSession });
+  }
+
 
   componentWillUnmount(): void {
     clearInterval(msg_timer);
   }
 
-  // useEffect(() => {
-  //   const GetCurrentKeys = async () => {
-  //     const keys = await getDataFromAO(this.)
-  //   }
-  //   GetCurrentKeys();
-  // }, [this.state.currentSessionID]);
-
+  async getCurrentKeys(sessionID: string): Promise<SessionKey[]> {
+    const keys = await getDataFromAO(sessionID, 'GetCurrentKeys', {});
+    if (keys && keys.length > 0) {
+      for (const key of keys) {
+        key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_a);
+      }
+    }
+    return keys;
+  }
 
   async start() {
     clearInterval(msg_timer);
@@ -235,6 +296,33 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       this.setState({ loading: false });
   }
 
+  async selectSession(session: Session) {
+    try {
+      const keys = await getDataFromAO(session.sessionID, 'GetCurrentKeys', {});
+
+      const updatedSession = {
+        ...session,
+        keys: keys || []
+      };
+
+      this.setState({ currentSession: updatedSession }, () => {
+        this.getMessages();
+        this.decryptAllMessages();
+      });
+    } catch (error) {
+      console.error("Failed to get current keys:", error);
+    }
+  }
+
+
+  async getKeysForSession(sessionID: string) {
+    const keys = await getDataFromAO(sessionID, 'GetCurrentKeys', {});
+    const updatedSessions = this.state.sessions.map(session =>
+      session.sessionID === sessionID ? { ...session, keys } : session
+    );
+    this.setState({ sessions: updatedSessions });
+  }
+
   async getMessages() {
     const { currentSession } = this.state;
     if (!currentSession) return;
@@ -272,8 +360,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         <div
           key={i}
           className={`chat-page-list ${selected ? 'selected' : ''}`}
-          onClick={() => this.setState({ currentSession: session }, this.getMessages)}
-        >
+          onClick={() => this.selectSession(session)}>
           <img className='chat-page-list-portrait' src={generateAvatar(session.otherHandleID)} />
           <div>
             <div className="chat-page-list-nickname">{session.otherHandleName}</div>
@@ -290,39 +377,40 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     if (this.state.loading)
       return (<Loading />);
 
+    const { currentSession, handle, pid, decryptedMessages, profiles } = this.state;
     const divs = [];
 
-    for (let i = 0; i < this.state.messages.length; i++) {
-      const data = this.state.messages[i];
-      const owner = (data.address === this.state.address);
+    for (let i = 0; i < decryptedMessages.length; i++) {
+      const data = decryptedMessages[i];
+      const owner = (data.sender === pid);
 
       divs.push(
         <div key={i} className={`chat-msg-line ${owner ? 'my-line' : 'other-line'}`}>
-          {!owner && <img className='chat-msg-portrait' src={generateAvatar(this.state.handles[this.state.friendHandle]?.pid)} />}
+          {!owner && <img className='chat-msg-portrait' src={generateAvatar(currentSession.otherHandleID)} />}
 
           <div>
             <div className={`chat-msg-header ${owner ? 'my-line' : 'other-line'}`}>
               <div className="chat-msg-nickname">{
                 owner
-                  ? shortStr(this.state.handles[this.state.currentHandle].profile?.name, 15)
-                  : this.state.handles[this.state.friendHandle]?.profile?.name
-                    ? shortStr(this.state.handles[this.state.friendHandle].profile.name, 15)
-                    : `@${shortStr(this.state.friendHandle, 15)}`
+                  ? profiles[handle]?.name ? shortStr(profiles[handle]?.name, 15) : handle
+                  : profiles[currentSession.otherHandleName]?.name
+                    ? shortStr(profiles[currentSession.otherHandleName]?.name, 15)
+                    : `@${shortStr(currentSession.otherHandleName, 15)}`
               }</div>
 
-              <div className="chat-msg-address">{shortAddr(data.address, 3)}</div>
+              {/* <div className="chat-msg-address">{shortAddr(data.address, 3)}</div> */}
             </div>
 
             <div className={`chat-message ${owner ? 'my-message' : 'other-message'}`}>
-              {data.message}
+              {data.decryptedMessage}
             </div>
 
             <div className={`chat-msg-time ${owner ? 'my-line' : 'other-line'}`}>
-              {formatTimestamp(data.time, true)}
+              {formatTimestamp(data.timestamp, true)}
             </div>
           </div>
 
-          {owner && <img className='chat-msg-portrait' src={generateAvatar(this.state.handles[this.state.currentHandle].pid)} />}
+          {owner && <img className='chat-msg-portrait' src={generateAvatar(pid)} />}
         </div>
       );
     }
@@ -340,12 +428,12 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       return;
     }
     this.setState({ msg: '' });
-    const { currentSession, profiles, handle, pid } = this.state;
+    const { sessions, currentSession, profiles, handle, pid, messages } = this.state;
     const keys = await getDataFromAO(currentSession.sessionID, 'GetCurrentKeys', {});
-    let generation = 0;
-    let aesKey;
+    let generation = 1;
+    let aesKey: Uint8Array;
 
-    if (!this.state.messages.length) {
+    if (!messages.length) {
       if (!keys || keys.length === 0) {
         console.log("keys not found");
 
@@ -363,6 +451,16 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         }
         const sessionKeyData = await prepareSessionKeyData(aesKey, ownPublicKey, otherPublicKey);
         console.log("session key data:", sessionKeyData);
+
+        const updatedSession: Session = {
+          ...currentSession,
+          keys: [{ ...sessionKeyData, generation }],
+          aesKey,
+        };
+        const updatedSessions = sessions.map(session =>
+          session.sessionID === currentSession.sessionID ? updatedSession : session
+        );
+        this.setState({ sessions: updatedSessions, currentSession: updatedSession });
 
         const relaySessionKey = {
           Target: currentSession.sessionID,
