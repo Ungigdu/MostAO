@@ -161,3 +161,28 @@ Handlers.add(
         print('Chat list sent to owner')
     end
 )
+
+Handlers.add(
+    "Notify",
+    Handlers.utils.hasMatchingTag("Action", "Notify"),
+    function(msg)
+        local data = json.decode(msg.Data)
+        local stmt = DB:prepare [[
+          UPDATE chatList SET lastMessageTime = :lastMessageTime WHERE sessionID = :sessionID;
+        ]]
+
+        if not stmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        stmt:bind_names({
+            lastMessageTime = data.lastMessageTime,
+            sessionID = msg.From
+        })
+
+        stmt:step()
+        stmt:reset()
+
+        Handlers.utils.reply(json.encode({ status = "success", message = "Notification received" }))(msg)
+    end
+)

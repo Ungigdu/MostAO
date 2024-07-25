@@ -169,6 +169,31 @@ Handlers.add(
         print('Chat list sent to owner')
     end
 )
+
+Handlers.add(
+    "Notify",
+    Handlers.utils.hasMatchingTag("Action", "Notify"),
+    function(msg)
+        local data = json.decode(msg.Data)
+        local stmt = DB:prepare [[
+          UPDATE chatList SET lastMessageTime = :lastMessageTime WHERE sessionID = :sessionID;
+        ]]
+
+        if not stmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        stmt:bind_names({
+            lastMessageTime = data.lastMessageTime,
+            sessionID = msg.From
+        })
+
+        stmt:step()
+        stmt:reset()
+
+        Handlers.utils.reply(json.encode({ status = "success", message = "Notification received" }))(msg)
+    end
+)
 ]=]
 local SESSION_LUA_CODE_TEMPLATE = [=[
 local json = require("json")
@@ -296,15 +321,15 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        if not (authorizeAndReply(msg, HANDLE_A_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
-                authorizeAndReply(msg, HANDLE_B_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
+        if not (authorizeAndReply(msg, HANDLE_A_PROCESS, 'Unauthorized attempt to send message', Handlers.utils.reply) or
+                authorizeAndReply(msg, HANDLE_B_PROCESS, 'Unauthorized attempt to send message', Handlers.utils.reply)) then
             return
         end
 
         local stmt = DB:prepare [[
-      INSERT INTO messages (sender, generation, timestamp, content)
-      VALUES (:sender, :generation, :timestamp, :content);
-    ]]
+          INSERT INTO messages (sender, generation, timestamp, content)
+          VALUES (:sender, :generation, :timestamp, :content);
+        ]]
 
         if not stmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
@@ -320,7 +345,19 @@ Handlers.add(
         stmt:step()
         stmt:reset()
 
-        Handlers.utils.reply(json.encode({ status = "success", message = "Message sent" }))(msg)
+        ao.send({
+            Target = HANDLE_A_PROCESS,
+            Action = "Notify",
+            Data = json.encode({ lastMessageTime = msg.Timestamp / 1000 })
+        })
+
+        ao.send({
+            Target = HANDLE_B_PROCESS,
+            Action = "Notify",
+            Data = json.encode({ lastMessageTime = msg.Timestamp / 1000 })
+        })
+
+        Handlers.utils.reply(json.encode({ status = "success", message = "Message sent and notification sent" }))(msg)
     end
 )
 
