@@ -62,6 +62,7 @@ interface ChatPageState {
   currentSession: Session;
   profiles: {[key: string]: any};
   isShowHandleSearch: boolean;
+  chatListPollTimer: NodeJS.Timeout | null;
 }
 
 class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
@@ -87,6 +88,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       currentSession: null,
       profiles: {},
       isShowHandleSearch: false,
+      chatListPollTimer: null,
     };
 
     subscribe('go-chat', () => {
@@ -167,6 +169,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
   componentWillUnmount(): void {
     clearInterval(msg_timer);
+    if (this.state.chatListPollTimer) {
+      clearTimeout(this.state.chatListPollTimer);
+    }
   }
 
   async getCurrentKeys(sessionID: string): Promise<SessionKey[]> {
@@ -223,9 +228,10 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     this.setState({ handle, pid, address, handles, profiles: { [handle]: myProfile } });
 
-    setTimeout(() => {
-      this.getChatList();
-      this.setState({ loading: false });
+    setTimeout(async () => {
+      await this.getChatList();
+      this.setState({loading: false});
+      this.pollingChatList();
     }, 50);
   }
 
@@ -261,33 +267,41 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }, 1000);
   }
 
-  async getChatList() {
+  async getChatList () {
     // if (this.state.chatList.length > 0 || !this.state.currentHandle) return;
 
-    const data = { address: this.state.address };
+    const data = {address: this.state.address};
     // console.log("getChatList for process of pid:", this.state.pid);
 
-    const sessions = await getDataFromAO(this.state.pid, 'GetChatList', data);
+    const sessions: Session[] = await getDataFromAO(this.state.pid, 'GetChatList', data);
     console.log("getChatList:", sessions);
 
     if (!sessions) return;
-    
-    const profiles = { ...this.state.profiles };
-    for (const chat of sessions) {
+    if (sessions.length === 0) return;
+    const oldSessions = this.state.sessions
+    const diffSessions = sessions.filter(session => !oldSessions.find(s => s.sessionID === session.sessionID));
+    console.log("diffSessions:", diffSessions);
+
+    const profiles = {...this.state.profiles};
+    for (const chat of diffSessions) {
       if (!profiles[chat.otherHandleID]) {
         const profile = await getProfile(chat.otherHandleID);
         profiles[chat.otherHandleName] = profile;
       }
     }
 
-    if (sessions.length > 0)
-      // this.goChat(chatList[0].sessionID);
-      this.setState({ sessions, profiles, loading: false });
-    else
-      this.setState({ loading: false });
+    this.setState({sessions, profiles});
   }
 
-  async selectSession(session: Session) {
+  pollingChatList () {
+    const timer = setTimeout(async () => {
+      await this.getChatList();
+      this.pollingChatList()
+    }, 5000);
+    this.setState({chatListPollTimer: timer})
+  }
+
+  async selectSession (session: Session) {
     try {
       const keys = await getDataFromAO(session.sessionID, 'GetCurrentKeys', {});
 
