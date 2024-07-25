@@ -13,6 +13,8 @@ import { BsArrowLeftCircleFill, BsGear } from 'react-icons/bs';
 import { withRouter } from '../util/withRouter';
 import { decryptAESKeyWithPlugin, decryptMessageWithAES, encryptMessageWithAES, generateAESKey, prepareSessionKeyData } from '../util/crypto';
 import Logo from '../elements/Logo';
+import HandleSearchButton from '../modals/handleSearch/HandleSearchButton';
+import HandleSearch from '../modals/handleSearch/HandleSearch';
 
 declare let window: any;
 let msg_timer: any;
@@ -58,7 +60,8 @@ interface ChatPageState {
   handle: string;
   pid: string;
   currentSession: Session;
-  profiles: { [key: string]: any };
+  profiles: {[key: string]: any};
+  isShowHandleSearch: boolean;
 }
 
 class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
@@ -83,6 +86,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       pid: '',
       currentSession: null,
       profiles: {},
+      isShowHandleSearch: false,
     };
 
     subscribe('go-chat', () => {
@@ -508,7 +512,14 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     this.start();
   }
 
-  renderHandleDropdown() {
+  openHandleSearch = () => {
+    this.setState({isShowHandleSearch: true});
+  }
+  closeHandleSearch = () => {
+    this.setState({isShowHandleSearch: false});
+  }
+
+  renderHandleDropdown () {
     if (!this.state.showHandlesDropdown) return null;
 
     // return (
@@ -575,6 +586,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
         <div className='chat-page-container'>
           <div className='chat-page-sidebar'>
+            {/* search button */}
+            <HandleSearchButton onClick={() => this.openHandleSearch()} />
             <div className='chat-page-chat-list'>
               {this.renderChatList()}
             </div>
@@ -607,7 +620,12 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         </div>
 
         {/* <MessageModal message={this.state.message} /> */}
-        <AlertModal message={this.state.alert} button="OK" onClose={() => this.setState({ alert: '' })} />
+        <AlertModal message={this.state.alert} button="OK" onClose={() => this.setState({alert: ''})} />
+        <HandleSearch
+          isOpen={this.state.isShowHandleSearch}
+          onClose={this.closeHandleSearch}
+          myHandleName={this.state.handle}
+        />
       </div>
     );
   }

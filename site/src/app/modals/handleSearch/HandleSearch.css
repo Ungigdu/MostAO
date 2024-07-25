@@ -1,0 +1,27 @@
+.handle-search-box {
+  display: flex;
+  justify-content: space-between;
+}
+
+.handle-search-input {
+  width: 60%;
+}
+
+.handle-profile-list {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.handle-profile {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 25px;
+}
+
+.handle-profile-btn {
+  min-height: none;
+  min-width: none;
+  padding: 8px;
+}
