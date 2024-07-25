@@ -1,6 +1,8 @@
 local json = require("json")
 local profiles = {}
-pubkey = "__PUBKEY__"
+PUBKEY = "__PUBKEY__"
+HANDLE_OWNER = "__HANDLE_OWNER__"
+HANDLE_NAME = "__HANDLE_NAME__"
 REGISTRY_PROCESS_ID = "oH5zaOmPCdCL_N2Mn79qqwtoCLXS2y6gcXv7Ohfmh-k"
 local sqlite3 = require("lsqlite3")
 DB = DB or sqlite3.open_memory()
@@ -32,12 +34,12 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        if ao.env.Process.Tags["MostAO-Handle-Owner"] ~= msg.From then
+        if msg.From ~= HANDLE_OWNER then
             print('Unauthorized attempt to update profile')
             Handlers.utils.reply(json.encode({
                 status = "error",
                 message = "Unauthorized",
-                owner = ao.env.Process.Tags["MostAO-Handle-Owner"],
+                owner = HANDLE_OWNER,
                 msgFrom =
                     msg.From
             }))(msg)
@@ -62,7 +64,7 @@ Handlers.add(
     Handlers.utils.hasMatchingTag("Action", "GetProfile"),
     function(msg)
         local completeProfile = profiles
-        completeProfile.pubkey = pubkey
+        completeProfile.pubkey = PUBKEY
         Handlers.utils.reply(json.encode(completeProfile))(msg)
     end
 )
@@ -73,7 +75,7 @@ Handlers.add(
     function(msg)
         local wrappedMessage = json.decode(msg.Data)
 
-        if not authorizeAndReply(msg, ao.env.Process.Tags["MostAO-Handle-Owner"], 'Unauthorized attempt to relay message', Handlers.utils.reply) then
+        if not authorizeAndReply(msg, HANDLE_OWNER, 'Unauthorized attempt to relay message', Handlers.utils.reply) then
             return
         end
 
@@ -157,5 +159,30 @@ Handlers.add(
         print('ChatList: ' .. json.encode(chatList))
         Handlers.utils.reply(json.encode(chatList))(msg)
         print('Chat list sent to owner')
+    end
+)
+
+Handlers.add(
+    "Notify",
+    Handlers.utils.hasMatchingTag("Action", "Notify"),
+    function(msg)
+        local data = json.decode(msg.Data)
+        local stmt = DB:prepare [[
+          UPDATE chatList SET lastMessageTime = :lastMessageTime WHERE sessionID = :sessionID;
+        ]]
+
+        if not stmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        stmt:bind_names({
+            lastMessageTime = data.lastMessageTime,
+            sessionID = msg.From
+        })
+
+        stmt:step()
+        stmt:reset()
+
+        Handlers.utils.reply(json.encode({ status = "success", message = "Notification received" }))(msg)
     end
 )
