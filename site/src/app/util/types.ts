@@ -17,3 +17,11 @@ export type ProfileType = {
 };
 
 export type HandleProfileType = HandleType & ProfileType;
+
+export type Messages = {
+  content: string;
+  generation: number;
+  id: number;
+  sender: string;
+  timestamp: number;
+}

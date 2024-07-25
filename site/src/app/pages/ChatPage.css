@@ -184,7 +184,7 @@
   cursor: pointer;
   padding: 5px 10px;
   border-radius: 10px;
-  width: 100%;
+  /* width: 100%; */
 }
 
 .chat-page-list:hover {
@@ -226,4 +226,12 @@
   .chat-page-messages-container {
     height: 430px;
   }
+}
+
+.unread-pointer {
+  background-color: green;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: auto;
 }

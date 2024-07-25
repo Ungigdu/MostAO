@@ -15,6 +15,7 @@ import { decryptAESKeyWithPlugin, decryptMessageWithAES, encryptMessageWithAES, 
 import Logo from '../elements/Logo';
 import HandleSearchButton from '../modals/handleSearch/HandleSearchButton';
 import HandleSearch from '../modals/handleSearch/HandleSearch';
+import {Messages} from '../util/types';
 
 declare let window: any;
 let msg_timer: any;
@@ -33,17 +34,20 @@ interface SessionKey {
   generation: number;
 }
 
-interface Session {
+type Session = {
   otherHandleName: string;
   sessionID: string;
   otherHandleID: string;
   keys?: SessionKey[];
   aesKey?: Uint8Array;
+  lastMessageTime?: number;
+} & {
+  hasNewMessage?: boolean;
 }
 
 interface ChatPageState {
   msg: string;
-  messages: any[];
+  messages: Messages[];
   decryptedMessages: any[];
   question: string;
   alert: string;
@@ -127,6 +131,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     if (prevState.messages !== this.state.messages) {
       this.decryptAllMessages();
     }
+    if (this.state.currentSession && prevState.currentSession !== this.state.currentSession && this.state.currentSession.hasNewMessage) {
+      this.getMessages()
+    }
   }
 
   async decryptAllMessages() {
@@ -146,12 +153,12 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
           } else if (sessionKey.pubkey_b === profiles[handle].pubkey) {
             currentSession.aesKey = await decryptAESKeyWithPlugin(sessionKey.encrypted_sk_by_b);
           }
-          try {
-            decryptedMessage = await decryptMessageWithAES(data.content, currentSession.aesKey);
-          } catch (error) {
-            console.error("Failed to decrypt message:", error);
-            decryptedMessage = "[Failed to decrypt message]";
-          }
+        }
+        try {
+          decryptedMessage = await decryptMessageWithAES(data.content, currentSession.aesKey);
+        } catch (error) {
+          console.error("Failed to decrypt message:", error);
+          decryptedMessage = "[Failed to decrypt message]";
         }
       } else {
         decryptedMessage = "[No key available]";
@@ -229,8 +236,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     this.setState({ handle, pid, address, handles, profiles: { [handle]: myProfile } });
 
     setTimeout(async () => {
-      await this.getChatList();
       this.setState({loading: false});
+      await this.getChatList();
       this.pollingChatList();
     }, 50);
   }
@@ -274,30 +281,53 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     // console.log("getChatList for process of pid:", this.state.pid);
 
     const sessions: Session[] = await getDataFromAO(this.state.pid, 'GetChatList', data);
-    console.log("getChatList:", sessions);
 
     if (!sessions) return;
     if (sessions.length === 0) return;
     const oldSessions = this.state.sessions
-    const diffSessions = sessions.filter(session => !oldSessions.find(s => s.sessionID === session.sessionID));
-    console.log("diffSessions:", diffSessions);
+    const newSessions = sessions.filter(session => !oldSessions.find(s => s.sessionID === session.sessionID));
+
+    console.log("getChatList:", sessions);
+
+    let shouldUpdate = false;
 
     const profiles = {...this.state.profiles};
-    for (const chat of diffSessions) {
-      if (!profiles[chat.otherHandleID]) {
-        const profile = await getProfile(chat.otherHandleID);
-        profiles[chat.otherHandleName] = profile;
+    if (newSessions.length > 0) {
+      console.log("newSessions:", newSessions);
+      shouldUpdate = true
+      for (const chat of newSessions) {
+        if (!profiles[chat.otherHandleID]) {
+          const profile = await getProfile(chat.otherHandleID);
+          profiles[chat.otherHandleName] = profile;
+        }
       }
     }
 
-    this.setState({sessions, profiles});
+    sessions.forEach(el => {
+      let oldItem = oldSessions.find(s => s.sessionID === el.sessionID);
+      if (oldItem && oldItem.lastMessageTime < el.lastMessageTime) {
+        el.hasNewMessage = true;
+        shouldUpdate = true;
+      } else if (!oldItem && el.lastMessageTime > 0) {
+        el.hasNewMessage = true;
+        shouldUpdate = true;
+      }
+    })
+    if (shouldUpdate) {
+      if (this.state.currentSession) {
+        const updatedSession = sessions.find(session => session.sessionID === this.state.currentSession.sessionID);
+        this.setState({sessions, profiles, currentSession: updatedSession});
+      } else {
+        this.setState({sessions, profiles});
+      }
+    }
   }
 
   pollingChatList () {
     const timer = setTimeout(async () => {
       await this.getChatList();
       this.pollingChatList()
-    }, 5000);
+    }, 2000);
     this.setState({chatListPollTimer: timer})
   }
 
@@ -312,7 +342,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
       this.setState({ currentSession: updatedSession }, () => {
         this.getMessages();
-        this.decryptAllMessages();
       });
     } catch (error) {
       console.error("Failed to get current keys:", error);
@@ -338,7 +367,18 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     console.log("messages:", messages);
     if (!messages) return;
 
-    this.setState({ messages, loading: false });
+    let updatedSession = {
+      ...currentSession,
+      hasNewMessage: false
+    }
+    const updatedSessions = this.state.sessions.map(el => {
+      if (el.sessionID === currentSession.sessionID) {
+        return updatedSession;
+      }
+      return el;
+    })
+
+    this.setState({messages, loading: false, sessions: updatedSessions, currentSession: updatedSession});
     setTimeout(() => {
       this.scrollToBottom();
     }, 1000);
@@ -371,6 +411,10 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
             <div className="chat-page-list-nickname">{session.otherHandleName}</div>
             {/* <div className="chat-page-list-addr">{shortAddr(data.participant, 4)}</div> */}
           </div>
+          {
+            session.hasNewMessage &&
+            <i className='unread-pointer'></i>
+          }
         </div>
       );
     }
