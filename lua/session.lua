@@ -1,5 +1,9 @@
 local json = require("json")
 local sqlite3 = require("lsqlite3")
+HANDLE_A_NAME = "__HANDLE_A_NAME__"
+HANDLE_A_PROCESS = "__HANDLE_A_PROCESS__"
+HANDLE_B_NAME = "__HANDLE_B_NAME__"
+HANDLE_B_PROCESS = "__HANDLE_B_PROCESS__"
 
 DB = DB or sqlite3.open_memory()
 
@@ -48,11 +52,8 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        local handleAProcess = ao.env.Process.Tags["Session-HandleA-Process"]
-        local handleBProcess = ao.env.Process.Tags["Session-HandleB-Process"]
-
-        if not (authorizeAndReply(msg, handleAProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
-                authorizeAndReply(msg, handleBProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
+        if not (authorizeAndReply(msg, HANDLE_A_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
+                authorizeAndReply(msg, HANDLE_B_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
             return
         end
 
@@ -122,11 +123,8 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        local handleAProcess = ao.env.Process.Tags["Session-HandleA-Process"]
-        local handleBProcess = ao.env.Process.Tags["Session-HandleB-Process"]
-
-        if not (authorizeAndReply(msg, handleAProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
-                authorizeAndReply(msg, handleBProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
+        if not (authorizeAndReply(msg, HANDLE_A_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
+                authorizeAndReply(msg, HANDLE_B_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
             return
         end
 

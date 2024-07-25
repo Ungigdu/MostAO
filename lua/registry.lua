@@ -1,10 +1,16 @@
 local json = require("json")
 local sqlite3 = require("lsqlite3")
 local SQLITE_WASM64_MODULE = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"
+PROCESS_POOL_THRESHOLD = 10
+HANDLE_POOL_NAME = "HandlePool"
+SESSION_POOL_NAME = "SessionPool"
+INITIAL_PROCESS_COUNT = 20
 local HANDLE_LUA_CODE_TEMPLATE = [=[
 local json = require("json")
 local profiles = {}
-pubkey = "__PUBKEY__"
+PUBKEY = "__PUBKEY__"
+HANDLE_OWNER = "__HANDLE_OWNER__"
+HANDLE_NAME = "__HANDLE_NAME__"
 REGISTRY_PROCESS_ID = "oH5zaOmPCdCL_N2Mn79qqwtoCLXS2y6gcXv7Ohfmh-k"
 local sqlite3 = require("lsqlite3")
 DB = DB or sqlite3.open_memory()
@@ -36,12 +42,12 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        if ao.env.Process.Tags["MostAO-Handle-Owner"] ~= msg.From then
+        if msg.From ~= HANDLE_OWNER then
             print('Unauthorized attempt to update profile')
             Handlers.utils.reply(json.encode({
                 status = "error",
                 message = "Unauthorized",
-                owner = ao.env.Process.Tags["MostAO-Handle-Owner"],
+                owner = HANDLE_OWNER,
                 msgFrom =
                     msg.From
             }))(msg)
@@ -66,7 +72,7 @@ Handlers.add(
     Handlers.utils.hasMatchingTag("Action", "GetProfile"),
     function(msg)
         local completeProfile = profiles
-        completeProfile.pubkey = pubkey
+        completeProfile.pubkey = PUBKEY
         Handlers.utils.reply(json.encode(completeProfile))(msg)
     end
 )
@@ -77,7 +83,7 @@ Handlers.add(
     function(msg)
         local wrappedMessage = json.decode(msg.Data)
 
-        if not authorizeAndReply(msg, ao.env.Process.Tags["MostAO-Handle-Owner"], 'Unauthorized attempt to relay message', Handlers.utils.reply) then
+        if not authorizeAndReply(msg, HANDLE_OWNER, 'Unauthorized attempt to relay message', Handlers.utils.reply) then
             return
         end
 
@@ -164,9 +170,13 @@ Handlers.add(
     end
 )
 ]=]
-local SESSION_LUA_CODE = [=[
+local SESSION_LUA_CODE_TEMPLATE = [=[
 local json = require("json")
 local sqlite3 = require("lsqlite3")
+HANDLE_A_NAME = "__HANDLE_A_NAME__"
+HANDLE_A_PROCESS = "__HANDLE_A_PROCESS__"
+HANDLE_B_NAME = "__HANDLE_B_NAME__"
+HANDLE_B_PROCESS = "__HANDLE_B_PROCESS__"
 
 DB = DB or sqlite3.open_memory()
 
@@ -215,11 +225,8 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        local handleAProcess = ao.env.Process.Tags["Session-HandleA-Process"]
-        local handleBProcess = ao.env.Process.Tags["Session-HandleB-Process"]
-
-        if not (authorizeAndReply(msg, handleAProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
-                authorizeAndReply(msg, handleBProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
+        if not (authorizeAndReply(msg, HANDLE_A_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
+                authorizeAndReply(msg, HANDLE_B_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
             return
         end
 
@@ -289,11 +296,8 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        local handleAProcess = ao.env.Process.Tags["Session-HandleA-Process"]
-        local handleBProcess = ao.env.Process.Tags["Session-HandleB-Process"]
-
-        if not (authorizeAndReply(msg, handleAProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
-                authorizeAndReply(msg, handleBProcess, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
+        if not (authorizeAndReply(msg, HANDLE_A_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply) or
+                authorizeAndReply(msg, HANDLE_B_PROCESS, 'Unauthorized attempt to rotate session key', Handlers.utils.reply)) then
             return
         end
 
@@ -372,15 +376,12 @@ DB:exec [[
     FOREIGN KEY (handleB) REFERENCES handles(handle)
   );
 
-  CREATE TABLE IF NOT EXISTS tasks (
-    task_id TEXT PRIMARY KEY,
-    metadata TEXT NOT NULL
+  CREATE TABLE IF NOT EXISTS process_pool (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    process_id TEXT NOT NULL,
+    pool_name TEXT NOT NULL
   );
 ]]
-
-local function generateUniqueID()
-    return tostring(os.time()) .. tostring(math.random(100000, 999999))
-end
 
 local function query(stmt)
     local rows = {}
@@ -402,6 +403,57 @@ local function authorizeAndReply(msg, expected, errorMessage, reply)
     end
     return true
 end
+
+local function checkAndRefillPool(pool_name)
+    local countStmt = DB:prepare [[
+        SELECT COUNT(*) as count FROM process_pool WHERE pool_name = :pool_name;
+    ]]
+    countStmt:bind_names({ pool_name = pool_name })
+    local countRows = query(countStmt)
+    local count = countRows[1].count
+
+    print('Pool ' .. pool_name .. ' count: ' .. count)
+    local needed = PROCESS_POOL_THRESHOLD - count
+    if needed > 0 then
+        for i = 1, needed do
+            local spawnMessage = {
+                Tags = {
+                    { name = "Name", value = pool_name == HANDLE_POOL_NAME and "MostAO-Handle" or "MostAO-Session" }
+                }
+            }
+            ao.spawn(SQLITE_WASM64_MODULE, spawnMessage)
+        end
+    end
+end
+
+local function getProcessFromPool(poolName)
+    local stmt = DB:prepare [[
+        SELECT process_id FROM process_pool WHERE pool_name = :pool_name LIMIT 1;
+    ]]
+    stmt:bind_names({ pool_name = poolName })
+    local rows = query(stmt)
+
+    if #rows > 0 then
+        local process_id = rows[1].process_id
+        local deleteStmt = DB:prepare [[
+            DELETE FROM process_pool WHERE process_id = :process_id;
+        ]]
+        deleteStmt:bind_names({ process_id = process_id })
+        deleteStmt:step()
+        deleteStmt:reset()
+
+        return process_id
+    else
+        return nil
+    end
+end
+
+local function initializeProcessPools()
+    checkAndRefillPool(HANDLE_POOL_NAME)
+    checkAndRefillPool(SESSION_POOL_NAME)
+end
+
+initializeProcessPools()
 
 Handlers.add(
     "QueryHandle",
@@ -462,40 +514,62 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        print('Registering handle: ' .. data.handle)
-        -- print('PID: ' .. data.pid)
-        print('Owner: ' .. msg.From)
-
-        local task_id = generateUniqueID()
-        local metadata = json.encode({
-            pubkey = data.pubkey
-        })
-
-        local taskStmt = DB:prepare [[
-            INSERT INTO tasks (task_id, metadata) VALUES (:task_id, :metadata);
+        local checkStmt = DB:prepare [[
+            SELECT pid FROM handles WHERE handle = :handle;
         ]]
 
-        if not taskStmt then
+        if not checkStmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
         end
 
-        taskStmt:bind_names({
-            task_id = task_id,
-            metadata = metadata
+        checkStmt:bind_names({ handle = data.handle })
+        local rows = query(checkStmt)
+        checkStmt:reset()
+
+        if #rows > 0 then
+            Handlers.utils.reply(json.encode({ status = "error", message = "Handle already exists" }))(msg)
+            return
+        end
+
+        local process_id = getProcessFromPool(HANDLE_POOL_NAME)
+
+        if not process_id then
+            Handlers.utils.reply(json.encode({ status = "error", message = "No available process in handle pool" }))(msg)
+            return
+        end
+
+        print('Registering handle: ' .. data.handle)
+        print('Owner: ' .. msg.From)
+
+        ao.send({
+            Target = process_id,
+            Action = "Eval",
+            Data = HANDLE_LUA_CODE_TEMPLATE:gsub("__PUBKEY__", data.pubkey)
+                :gsub("__HANDLE_NAME__", data.handle)
+                :gsub("__HANDLE_OWNER__", msg.From)
         })
 
-        taskStmt:step()
-        taskStmt:reset()
+        local stmt = DB:prepare [[
+            REPLACE INTO handles (handle, pid, owner) VALUES (:handle, :pid, :owner);
+        ]]
 
-        local spawnMessage = {
-            Tags = {
-                { name = "MostAO-Task-ID",      value = task_id },
-                { name = "MostAO-Handle-Name",  value = data.handle },
-                { name = "MostAO-Handle-Owner", value = msg.From },
-                { name = "Name",                value = "MostAO-Handle" }
-            }
-        }
-        local result = ao.spawn(SQLITE_WASM64_MODULE, spawnMessage)
+        if not stmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        stmt:bind_names({
+            handle = data.handle,
+            pid = process_id,
+            owner = msg.From
+        })
+
+        stmt:step()
+        stmt:reset()
+
+        print('Handle code injected for ' .. data.handle)
+        Handlers.utils.reply("Handle registration success")(msg)
+
+        checkAndRefillPool(HANDLE_POOL_NAME)
     end
 )
 
@@ -503,118 +577,17 @@ Handlers.add(
     "Spawned",
     Handlers.utils.hasMatchingTag("Action", "Spawned"),
     function(msg)
-        local pid = msg.Tags.Process
-        local owner = msg.Tags["MostAO-Handle-Owner"]
-        local handle = msg.Tags["MostAO-Handle-Name"]
-        print('Spawned Done!')
+        local process_id = msg.Tags.Process
+        local pool_name = msg.Tags.Name == "MostAO-Handle" and HANDLE_POOL_NAME or SESSION_POOL_NAME
 
-        if handle then
-            local task_id = msg.Tags["MostAO-Task-ID"]
-
-            local taskStmt = DB:prepare [[
-            SELECT metadata FROM tasks WHERE task_id = :task_id;
+        local stmt = DB:prepare [[
+            INSERT INTO process_pool (process_id, pool_name) VALUES (:process_id, :pool_name);
         ]]
+        stmt:bind_names({ process_id = process_id, pool_name = pool_name })
+        stmt:step()
+        stmt:reset()
 
-            if not taskStmt then
-                error("Failed to prepare SQL statement: " .. DB:errmsg())
-            end
-
-            taskStmt:bind_names({ task_id = task_id })
-            local taskRows = query(taskStmt)
-            taskStmt:reset()
-
-            if #taskRows == 0 then
-                error("Task not found for task_id: " .. task_id)
-            end
-
-            local metadata = json.decode(taskRows[1].metadata)
-            print('Metadata: ' .. json.encode(metadata))
-            local pubkey = metadata.pubkey
-
-            local stmt = DB:prepare [[
-              REPLACE INTO handles (handle, pid, owner) VALUES (:handle, :pid, :owner);
-            ]]
-
-            if not stmt then
-                error("Failed to prepare SQL statement: " .. DB:errmsg())
-            end
-
-            stmt:bind_names({
-                handle = handle,
-                pid = pid,
-                owner = owner
-            })
-            local handleLuaCode = HANDLE_LUA_CODE_TEMPLATE:gsub("__PUBKEY__", pubkey)
-            local result = ao.send({
-                Target = pid,
-                Action = "Eval",
-                Data = handleLuaCode
-            })
-            stmt:step()
-            stmt:reset()
-
-            print('Handle code injected for ' .. handle)
-            Handlers.utils.reply("Handle Spawn Success")(msg)
-        else
-            local handleA_name = msg.Tags["Session-HandleA-Name"]
-            local handleA_pid = msg.Tags["Session-HandleA-Process"]
-            local handleB_name = msg.Tags["Session-HandleB-Name"]
-            local handleB_pid = msg.Tags["Session-HandleB-Process"]
-
-            local stmt = DB:prepare [[
-              INSERT INTO sessions (session_id, handleA, handleB) VALUES (:session_id, :handleA, :handleB);
-            ]]
-
-            if not stmt then
-                error("Failed to prepare SQL statement: " .. DB:errmsg())
-            end
-
-            stmt:bind_names({
-                session_id = pid,
-                handleA = handleA_name,
-                handleB = handleB_name
-            })
-            stmt:step()
-            stmt:reset()
-            print('Session registered between ' .. handleA_name .. ' and ' .. handleB_name .. ': ' .. pid)
-            local result = ao.send({
-                Target = pid,
-                Action = "Eval",
-                Data = SESSION_LUA_CODE
-            })
-            local transferedData = json.encode({
-                session_id = pid,
-                otherHandleName = handleB_name,
-                otherHandleID = handleB_pid
-            })
-            print('Transfering data to ' .. handleA_pid .. ': ' .. transferedData)
-            ao.send({
-                Target = handleA_pid,
-                Action = "UpdateChatList",
-                Data = json.encode({
-                    sessionID = pid,
-                    otherHandleName = handleB_name,
-                    otherHandleID = handleB_pid,
-                    -- lastMessageTime = os.time(),
-                    -- lastViewedTime =
-                    --     os.time()
-                })
-            })
-
-            ao.send({
-                Target = handleB_pid,
-                Action = "UpdateChatList",
-                Data = json.encode({
-                    sessionID = pid,
-                    otherHandleName = handleA_name,
-                    otherHandleID = handleA_pid,
-                    -- lastMessageTime = os.time(),
-                    -- lastViewedTime =
-                    --     os.time()
-                })
-            })
-            Handlers.utils.reply("Session Spawn Success")(msg)
-        end
+        Handlers.utils.reply("Process added to pool")(msg)
     end
 )
 
@@ -760,17 +733,59 @@ Handlers.add(
             return
         end
 
-        local spawnMessage = {
-            Tags = {
-                { name = "Session-HandleA-Name",    value = handleA },
-                { name = "Session-HandleA-Process", value = processA },
-                { name = "Session-HandleB-Name",    value = handleB },
-                { name = "Session-HandleB-Process", value = processB },
-                { name = "Name",                    value = "MostAO-Session" }
-            }
-        }
-        local result = ao.spawn(SQLITE_WASM64_MODULE, spawnMessage)
-        print('Spawn session request sent for handles ' .. handleA .. ' and ' .. handleB)
-        Handlers.utils.reply(json.encode({ status = "success", message = "Session spawn request sent, " }))(msg)
+        local process_id = getProcessFromPool(SESSION_POOL_NAME)
+        if not process_id then
+            Handlers.utils.reply(json.encode({ status = "error", message = "No available process in session pool" }))(
+                msg)
+            return
+        end
+
+        ao.send({
+            Target = process_id,
+            Action = "Eval",
+            Data = SESSION_LUA_CODE_TEMPLATE:gsub("__HANDLE_A_NAME__", handleA):gsub("__HANDLE_A_PROCESS__",
+                processA):gsub("__HANDLE_B_NAME__", handleB):gsub("__HANDLE_B_PROCESS__", processB)
+        })
+
+        local stmt = DB:prepare [[
+            INSERT INTO sessions (session_id, handleA, handleB) VALUES (:session_id, :handleA, :handleB);
+        ]]
+        if not stmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        stmt:bind_names({
+            session_id = process_id,
+            handleA = handleA,
+            handleB = handleB
+        })
+
+        stmt:step()
+        stmt:reset()
+
+        print('Session registered between ' .. handleA .. ' and ' .. handleB .. ': ' .. process_id)
+
+        ao.send({
+            Target = processA,
+            Action = "UpdateChatList",
+            Data = json.encode({
+                sessionID = process_id,
+                otherHandleName = handleB,
+                otherHandleID = processB,
+            })
+        })
+
+        ao.send({
+            Target = processB,
+            Action = "UpdateChatList",
+            Data = json.encode({
+                sessionID = process_id,
+                otherHandleName = handleA,
+                otherHandleID = processA,
+            })
+        })
+
+        checkAndRefillPool(SESSION_POOL_NAME)
+        Handlers.utils.reply("Session Establish Success")(msg)
     end
 )
