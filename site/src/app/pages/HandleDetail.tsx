@@ -202,7 +202,7 @@ const HandleDetail: React.FC = () => {
           {renderFilters()}
         </div>
 
-        <div>
+        {/* <div>
           <div className='profile-page-es-title'>Establish Session</div>
           <input
             type="text"
@@ -214,7 +214,7 @@ const HandleDetail: React.FC = () => {
           <button className='profile-page-es-button' onClick={handleEstablishSession}>
             Establish Session
           </button>
-        </div>
+        </div> */}
 
         {renderChatHistory()}
 

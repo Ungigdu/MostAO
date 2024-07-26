@@ -724,7 +724,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
               name={currentProfile.name}
               imgUrl={currentProfile.img}
               handleName={this.state.handle}
-              onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}
+              // onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}
               />
 
               <div className="handle-dropdown">
