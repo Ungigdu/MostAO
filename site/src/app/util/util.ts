@@ -1,6 +1,5 @@
 import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnect/browser";
-import { AO_TWITTER, ARWEAVE_GATEWAY, MODULE, SCHEDULER, WASM64_MODULE, regexPatterns } from "./consts";
-import { Server } from "../../server/server";
+import { ARWEAVE_GATEWAY, SCHEDULER, WASM64_MODULE, regexPatterns } from "./consts";
 import { createAvatar } from '@dicebear/core';
 import { micah } from '@dicebear/collection';
 import * as Othent from "@othent/kms";

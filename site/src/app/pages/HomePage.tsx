@@ -2,14 +2,14 @@ import React from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, getWalletPublicKey, getProfile } from '../util/util';
+import { connectWallet, getWalletAddress, isLoggedIn, uuid, getDataFromAO, messageToAO, getWalletPublicKey, getProfile } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
 import { HANDLE_REGISTRY } from '../util/consts';
 import AlertModal from '../modals/AlertModal';
 import Logo from '../elements/Logo';
-import {ProfileType} from '../util/types';
+import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
 
 declare let window: any;
@@ -221,19 +221,11 @@ class HomePage extends React.Component<{}, HomePageState> {
         // <NavLink key={handleName} className='home-page-did' to={`/chat`} state={{ handles: this.state.handles, currentHandle: handleName }}>
         <NavLink key={handleName} className='home-page-did' to={`/chat/${handleName}`}>
           <Avatar
-          name={p?.name}
-          pid={handle.pid}
-          handleName={handleName}
-          imgUrl={p?.img}
+            name={p?.name}
+            pid={handle.pid}
+            handleName={handleName}
+            imgUrl={p?.img}
           />
-          {/* <img
-            className='home-page-portrait'
-            src={generateAvatar(handle.pid)}
-          />
-
-          <div className="home-page-nickname">
-            @{handleName}
-          </div> */}
         </NavLink>
       )
     }

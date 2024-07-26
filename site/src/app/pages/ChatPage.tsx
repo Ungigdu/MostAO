@@ -3,7 +3,7 @@ import './ChatPage.css';
 import AlertModal from '../modals/AlertModal';
 import {
   formatTimestamp, generateAvatar, getDataFromAO, getProfile, getWalletAddress,
-  messageToAO, shortAddr, shortStr, timeOfNow
+  messageToAO, shortStr, timeOfNow
 } from '../util/util';
 import { HANDLE_REGISTRY } from '../util/consts';
 import Loading from '../elements/Loading';
@@ -15,7 +15,7 @@ import { decryptAESKeyWithPlugin, decryptMessageWithAES, encryptMessageWithAES, 
 import Logo from '../elements/Logo';
 import HandleSearchButton from '../modals/handleSearch/HandleSearchButton';
 import HandleSearch from '../modals/handleSearch/HandleSearch';
-import {DecryptedMessage, Messages, ProfileType} from '../util/types';
+import { DecryptedMessage, Messages, ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
 
 declare let window: any;
@@ -65,7 +65,7 @@ interface ChatPageState {
   handle: string;
   pid: string;
   currentSession: Session;
-  profiles: {[key: string]: ProfileType};
+  profiles: { [key: string]: ProfileType };
   isShowHandleSearch: boolean;
   loadingChatList: boolean;
 }
@@ -264,7 +264,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     this.setState({ handle, pid, address, handles, profiles: { [handle]: myProfile } });
 
     setTimeout(async () => {
-      this.setState({loading: false});
+      this.setState({ loading: false });
       chatListPollTimer = 0 as any
       await this.getChatList();
       this.pollingChatList();
@@ -303,16 +303,16 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }, 1000);
   }
 
-  async getChatList () {
+  async getChatList() {
     // if (this.state.chatList.length > 0 || !this.state.currentHandle) return;
 
-    const data = {address: this.state.address};
+    const data = { address: this.state.address };
     // console.log("getChatList for process of pid:", this.state.pid);
 
     const sessions: Session[] = await getDataFromAO(this.state.pid, 'GetChatList', data);
 
     if (!sessions || sessions.length === 0) {
-      this.setState({sessions: [], loadingChatList: false});
+      this.setState({ sessions: [], loadingChatList: false });
       return
     }
     const oldSessions = this.state.sessions;
@@ -324,7 +324,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     let shouldUpdate = false;
 
-    const profiles = {...this.state.profiles};
+    const profiles = { ...this.state.profiles };
     if (newSessions.length > 0) {
       console.log("newSessions:", newSessions);
       shouldUpdate = true
@@ -342,7 +342,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }
 
     sessions.forEach((el) => {
-      let oldItem = oldSessions.find((s) => s.sessionID === el.sessionID);
+      const oldItem = oldSessions.find((s) => s.sessionID === el.sessionID);
       console.log(
         'sessions forEach:',
         el.otherHandleName,
@@ -365,9 +365,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
           ...this.state.currentSession,
           ...sameSession,
         }
-        this.setState({sessions, profiles, currentSession: updatedSession, loadingChatList: false});
+        this.setState({ sessions, profiles, currentSession: updatedSession, loadingChatList: false });
       } else {
-        this.setState({sessions, profiles, loadingChatList: false});
+        this.setState({ sessions, profiles, loadingChatList: false });
       }
     }
   }
@@ -381,7 +381,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     chatListPollTimer = timer;
   }
 
-  async selectSession (session: Session) {
+  async selectSession(session: Session) {
     try {
       const keys = await getDataFromAO(session.sessionID, 'GetCurrentKeys', {});
 
@@ -419,7 +419,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     messages = messages.reverse();
 
-    let updatedSession = {
+    const updatedSession = {
       ...currentSession,
       hasNewMessage: false
     }
@@ -430,7 +430,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       return el;
     })
 
-    this.setState({messages, loading: false, sessions: updatedSessions, currentSession: updatedSession});
+    this.setState({ messages, loading: false, sessions: updatedSessions, currentSession: updatedSession });
   }
 
   goChat(id: string) {
@@ -456,12 +456,12 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
           key={i}
           className={`chat-page-list ${selected ? 'selected' : ''}`}
           onClick={() => this.selectSession(session)}>
-            <Avatar
+          <Avatar
             name={p?.name}
             imgUrl={p?.img}
             handleName={session.otherHandleName}
             pid={session.otherHandleID}
-            />
+          />
           {
             session.hasNewMessage &&
             <i className='unread-pointer'></i>
@@ -486,10 +486,10 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     const p = profiles[currentSession.otherHandleName];
     return (
       <Avatar
-      name={p?.name}
-      pid={currentSession.otherHandleID}
-      handleName={currentSession.otherHandleName}
-      imgUrl={p?.img}
+        name={p?.name}
+        pid={currentSession.otherHandleID}
+        handleName={currentSession.otherHandleName}
+        imgUrl={p?.img}
       />
     )
   }
@@ -641,13 +641,13 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   openHandleSearch = () => {
-    this.setState({isShowHandleSearch: true});
+    this.setState({ isShowHandleSearch: true });
   }
   closeHandleSearch = () => {
-    this.setState({isShowHandleSearch: false});
+    this.setState({ isShowHandleSearch: false });
   }
 
-  renderHandleDropdown () {
+  renderHandleDropdown() {
     if (!this.state.showHandlesDropdown) return null;
 
     // return (
@@ -726,11 +726,11 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
             </div>
             <div className='profile-section'>
               <Avatar
-              className="chat-page-my-profile"
-              pid={this.state.pid}
-              name={currentProfile.name}
-              imgUrl={currentProfile.img}
-              handleName={this.state.handle}
+                className="chat-page-my-profile"
+                pid={this.state.pid}
+                name={currentProfile.name}
+                imgUrl={currentProfile.img}
+                handleName={this.state.handle}
               // onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}
               />
 
@@ -757,7 +757,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         </div>
 
         {/* <MessageModal message={this.state.message} /> */}
-        <AlertModal message={this.state.alert} button="OK" onClose={() => this.setState({alert: ''})} />
+        <AlertModal message={this.state.alert} button="OK" onClose={() => this.setState({ alert: '' })} />
         <HandleSearch
           isOpen={this.state.isShowHandleSearch}
           onClose={this.closeHandleSearch}

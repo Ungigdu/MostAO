@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { generateAvatar, getDataFromAO, getProfile, messageToAO, shortAddr } from '../util/util';
+import { useNavigate } from 'react-router-dom';
+import { generateAvatar, getDataFromAO, getProfile, messageToAO } from '../util/util';
 import EditProfileModal from '../modals/EditProfileModal';
 import { BsArrowLeftCircleFill, BsChat } from 'react-icons/bs';
 import { HANDLE_REGISTRY } from '../util/consts';
@@ -18,9 +18,7 @@ const HandleDetail: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
-  const [otherHandleName, setOtherHandleName] = useState('');
   const [pid, setPID] = useState('');
-  const navigate = useNavigate();
 
   // Added by Kevin
 
@@ -34,7 +32,7 @@ const HandleDetail: React.FC = () => {
   useEffect(() => {
     const fetchProfileAndHistory = async () => {
       try {
-        let res = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handle });
+        const res = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handle });
         const pid = res.pid;
         setPID(pid);
 
@@ -74,25 +72,6 @@ const HandleDetail: React.FC = () => {
   const handleBack = () => {
     // navigate('/');
     window.history.back();
-  };
-
-  const handleEstablishSession = async () => {
-    try {
-      const response = await messageToAO(
-        HANDLE_REGISTRY,
-        { handleA: handle, handleB: otherHandleName },
-        "EstablishSession"
-      );
-      console.log(response);
-      if (response) {
-        console.log("Session established successfully");
-        // Optionally update chat history or provide feedback to the user
-      } else {
-        console.error("Failed to establish session:", response);
-      }
-    } catch (error) {
-      console.error("Error establishing session:", error);
-    }
   };
 
   // Added by Kevin
@@ -157,9 +136,9 @@ const HandleDetail: React.FC = () => {
   }
 
   function renderFilters() {
-    let filters = ['Chat History'];
+    const filters = ['Chat History'];
 
-    let divs = [];
+    const divs = [];
     for (let i = 0; i < filters.length; i++) {
       divs.push(
         <div
