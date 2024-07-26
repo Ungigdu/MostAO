@@ -673,6 +673,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   renderSend() {
+    const { currentSession } = this.state;
+
     return (
       <div className='chat-page-send-container'>
         <input
@@ -684,7 +686,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
           onKeyDown={this.handleKeyDown}
           autoComplete="off"
         />
-        <button className="chat-send-button" onClick={() => this.sendMessage()}>Send</button>
+        <button disabled={!currentSession} className="chat-send-button" onClick={() => this.sendMessage()}>Send</button>
       </div>
     )
   }

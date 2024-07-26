@@ -176,6 +176,9 @@
   border-radius: 10px;
   border: 2px solid rgb(46, 75, 180);
 }
+.chat-send-button:disabled {
+  border: none;
+}
 
 .chat-page-list {
   display: flex;
