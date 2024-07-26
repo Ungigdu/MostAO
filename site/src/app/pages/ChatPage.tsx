@@ -204,8 +204,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
   componentWillUnmount(): void {
     clearInterval(msg_timer);
-    if (chatListPollTimer) {
+    if (chatListPollTimer !== null) {
       clearInterval(chatListPollTimer);
+      chatListPollTimer = null
     }
   }
 
@@ -264,6 +265,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     setTimeout(async () => {
       this.setState({loading: false});
+      chatListPollTimer = 0 as any
       await this.getChatList();
       this.pollingChatList();
     }, 50);
@@ -309,8 +311,10 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     const sessions: Session[] = await getDataFromAO(this.state.pid, 'GetChatList', data);
 
-    if (!sessions) return;
-    if (sessions.length === 0) return;
+    if (!sessions || sessions.length === 0) {
+      this.setState({sessions: [], loadingChatList: false});
+      return
+    }
     const oldSessions = this.state.sessions;
     const newSessions = sessions.filter(
       (session) => !oldSessions.find((s) => s.sessionID === session.sessionID)
@@ -369,6 +373,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   pollingChatList() {
+    if (chatListPollTimer === null) return;
     const timer = setTimeout(async () => {
       await this.getChatList();
       this.pollingChatList();
