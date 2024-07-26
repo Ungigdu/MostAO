@@ -66,8 +66,9 @@ interface ChatPageState {
   currentSession: Session;
   profiles: {[key: string]: any};
   isShowHandleSearch: boolean;
-  chatListPollTimer: NodeJS.Timeout | null;
 }
+
+let chatListPollTimer: NodeJS.Timeout | null = null;
 
 class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   constructor(props: ChatPageProps) {
@@ -92,7 +93,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       currentSession: null,
       profiles: {},
       isShowHandleSearch: false,
-      chatListPollTimer: null,
     };
 
     subscribe('go-chat', () => {
@@ -128,7 +128,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     // if (prevState.currentHandle !== this.state.currentHandle) {
     //   localStorage.setItem('currentHandle', this.state.currentHandle);
     // }
-    console.log("---- componentDidUpdate ----");
+    console.log('---- componentDidUpdate ----');
     if (prevState.messages !== this.state.messages) {
       this.decryptAllMessages();
     }
@@ -138,38 +138,60 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   async decryptAllMessages() {
-    const { messages, currentSession, handle, profiles } = this.state;
-    const decryptedMessages = await Promise.all(messages.map(async (data) => {
-      console.log("data:", data);
-      console.log("currentSession:", currentSession);
-      const sessionKey = currentSession.keys?.find(key => key.generation === data.generation);
-      console.log("sessionKey:", sessionKey);
-      let decryptedMessage = '';
+    const { messages, currentSession: s, handle, profiles } = this.state;
+    const currentSession = {
+      ...s,
+      hasNewMessage: false,
+    };
+    if (
+      currentSession &&
+      (!currentSession.keys || currentSession.keys.length === 0)
+    ) {
+      const keys = await this.getCurrentKeys(currentSession.sessionID);
+      currentSession.keys = keys;
+    }
+    const decryptedMessages = await Promise.all(
+      messages.map(async (data) => {
+        console.log('data:', data);
+        console.log('currentSession:', currentSession);
+        const sessionKey = currentSession.keys?.find(
+          (key) => key.generation === data.generation
+        );
+        console.log('sessionKey:', sessionKey);
+        let decryptedMessage = '';
 
-      if (sessionKey) {
-        if (!currentSession.aesKey) {
-          // decrypt with RSA
-          if (sessionKey.pubkey_a === profiles[handle].pubkey) {
-            currentSession.aesKey = await decryptAESKeyWithPlugin(sessionKey.encrypted_sk_by_a);
-          } else if (sessionKey.pubkey_b === profiles[handle].pubkey) {
-            currentSession.aesKey = await decryptAESKeyWithPlugin(sessionKey.encrypted_sk_by_b);
+        if (sessionKey) {
+          if (!currentSession.aesKey) {
+            // decrypt with RSA
+            if (sessionKey.pubkey_a === profiles[handle].pubkey) {
+              currentSession.aesKey = await decryptAESKeyWithPlugin(
+                sessionKey.encrypted_sk_by_a
+              );
+            } else if (sessionKey.pubkey_b === profiles[handle].pubkey) {
+              currentSession.aesKey = await decryptAESKeyWithPlugin(
+                sessionKey.encrypted_sk_by_b
+              );
+            }
           }
+          try {
+            decryptedMessage = await decryptMessageWithAES(
+              data.content,
+              currentSession.aesKey
+            );
+          } catch (error) {
+            console.error('Failed to decrypt message:', error);
+            decryptedMessage = '[Failed to decrypt message]';
+          }
+        } else {
+          decryptedMessage = '[No key available]';
         }
-        try {
-          decryptedMessage = await decryptMessageWithAES(data.content, currentSession.aesKey);
-        } catch (error) {
-          console.error("Failed to decrypt message:", error);
-          decryptedMessage = "[Failed to decrypt message]";
-        }
-      } else {
-        decryptedMessage = "[No key available]";
-      }
 
-      return {
-        ...data,
-        decryptedMessage
-      };
-    }));
+        return {
+          ...data,
+          decryptedMessage,
+        };
+      })
+    );
 
     this.setState({ decryptedMessages, currentSession });
     setTimeout(() => {
@@ -177,27 +199,25 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }, 100);
   }
 
-
   componentWillUnmount(): void {
     clearInterval(msg_timer);
-    if (this.state.chatListPollTimer) {
-      clearInterval(this.state.chatListPollTimer);
+    if (chatListPollTimer) {
+      clearInterval(chatListPollTimer);
     }
   }
 
   async getCurrentKeys(sessionID: string): Promise<SessionKey[]> {
     const { handle, profiles } = this.state;
     const keys = await getDataFromAO(sessionID, 'GetCurrentKeys', {});
-    if (keys && keys.length > 0) {
-      for (const key of keys) {
-        if (keys.pubkey_a === profiles[handle].pubkey) {
-          key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_a);
-        }
-        else if (keys.pubkey_b === profiles[handle].pubkey) {
-          key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_b);
-        }
-      }
-    }
+    // if (keys && keys.length > 0) {
+    //   for (const key of keys) {
+    //     if (keys.pubkey_a === profiles[handle].pubkey) {
+    //       key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_a);
+    //     } else if (keys.pubkey_b === profiles[handle].pubkey) {
+    //       key.aesKey = await decryptAESKeyWithPlugin(key.encrypted_sk_by_b);
+    //     }
+    //   }
+    // }
     return keys;
   }
 
@@ -288,8 +308,10 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     if (!sessions) return;
     if (sessions.length === 0) return;
-    const oldSessions = this.state.sessions
-    const newSessions = sessions.filter(session => !oldSessions.find(s => s.sessionID === session.sessionID));
+    const oldSessions = this.state.sessions;
+    const newSessions = sessions.filter(
+      (session) => !oldSessions.find((s) => s.sessionID === session.sessionID)
+    );
 
     console.log("getChatList:", sessions);
 
@@ -307,19 +329,23 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       }
     }
 
-    sessions.forEach(el => {
-      let oldItem = oldSessions.find(s => s.sessionID === el.sessionID);
-      console.log("sessions forEach:", el.otherHandleName, "old: ", oldItem?.lastMessageTime, "new: ", el?.lastMessageTime);
-      if (oldItem && oldItem.lastMessageTime < el.lastMessageTime) {
-        el.hasNewMessage = true;
-        shouldUpdate = true;
-      } else if (!oldItem && el.lastMessageTime > 0) {
+    sessions.forEach((el) => {
+      let oldItem = oldSessions.find((s) => s.sessionID === el.sessionID);
+      console.log(
+        'sessions forEach:',
+        el.otherHandleName,
+        'old: ',
+        oldItem?.lastMessageTime,
+        'new: ',
+        el?.lastMessageTime
+      );
+      if (oldItem && (oldItem.lastMessageTime || 0) < el.lastMessageTime) {
         el.hasNewMessage = true;
         shouldUpdate = true;
       } else if (oldItem && oldItem.hasNewMessage) {
         el.hasNewMessage = true;
       }
-    })
+    });
     if (shouldUpdate) {
       if (this.state.currentSession) {
         const sameSession = sessions.find(session => session.sessionID === this.state.currentSession.sessionID);
@@ -334,11 +360,12 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }
   }
 
-  pollingChatList () {
-    const timer = setInterval(async () => {
+  pollingChatList() {
+    const timer = setTimeout(async () => {
       await this.getChatList();
+      this.pollingChatList();
     }, 2000);
-    this.setState({chatListPollTimer: timer})
+    chatListPollTimer = timer;
   }
 
   async selectSession (session: Session) {
@@ -429,6 +456,33 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }
 
     return divs;
+  }
+
+  renderChatName() {
+    const { currentSession } = this.state;
+
+    if (!currentSession) {
+      return (
+        <div style={{ height: '40px', display: 'flex', alignItems: 'center' }}>
+          No chat selected
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <img
+          src={generateAvatar(currentSession.otherHandleID)}
+          className="avatar-small"
+        />
+        <span>{currentSession.otherHandleName}</span>
+      </div>
+    );
   }
 
   renderMessages() {
@@ -678,7 +732,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
           <div className='chat-page-chat-container'>
             {/* <div>Public Chatroom</div> */}
-            <div id='scrollableDiv' className="chat-page-messages-container">
+            {this.renderChatName()}
+            <div id="scrollableDiv" className="chat-page-messages-container">
               {this.renderMessages()}
             </div>
 
