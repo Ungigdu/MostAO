@@ -128,6 +128,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     // if (prevState.currentHandle !== this.state.currentHandle) {
     //   localStorage.setItem('currentHandle', this.state.currentHandle);
     // }
+    console.log("---- componentDidUpdate ----");
     if (prevState.messages !== this.state.messages) {
       this.decryptAllMessages();
     }
@@ -171,13 +172,16 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }));
 
     this.setState({ decryptedMessages, currentSession });
+    setTimeout(() => {
+      this.scrollToBottom();
+    }, 100);
   }
 
 
   componentWillUnmount(): void {
     clearInterval(msg_timer);
     if (this.state.chatListPollTimer) {
-      clearTimeout(this.state.chatListPollTimer);
+      clearInterval(this.state.chatListPollTimer);
     }
   }
 
@@ -305,17 +309,24 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     sessions.forEach(el => {
       let oldItem = oldSessions.find(s => s.sessionID === el.sessionID);
+      console.log("sessions forEach:", el.otherHandleName, "old: ", oldItem?.lastMessageTime, "new: ", el?.lastMessageTime);
       if (oldItem && oldItem.lastMessageTime < el.lastMessageTime) {
         el.hasNewMessage = true;
         shouldUpdate = true;
       } else if (!oldItem && el.lastMessageTime > 0) {
         el.hasNewMessage = true;
         shouldUpdate = true;
+      } else if (oldItem && oldItem.hasNewMessage) {
+        el.hasNewMessage = true;
       }
     })
     if (shouldUpdate) {
       if (this.state.currentSession) {
-        const updatedSession = sessions.find(session => session.sessionID === this.state.currentSession.sessionID);
+        const sameSession = sessions.find(session => session.sessionID === this.state.currentSession.sessionID);
+        const updatedSession = {
+          ...this.state.currentSession,
+          ...sameSession,
+        }
         this.setState({sessions, profiles, currentSession: updatedSession});
       } else {
         this.setState({sessions, profiles});
@@ -324,9 +335,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   pollingChatList () {
-    const timer = setTimeout(async () => {
+    const timer = setInterval(async () => {
       await this.getChatList();
-      this.pollingChatList()
     }, 2000);
     this.setState({chatListPollTimer: timer})
   }
@@ -363,9 +373,11 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     console.log("DM messages -->");
     const data = { from: 0, until: timeOfNow(), limit: 100, order: 'DESC' };
 
-    const messages = await getDataFromAO(currentSession.sessionID, 'QueryMessage', data);
+    let messages: any[] = await getDataFromAO(currentSession.sessionID, 'QueryMessage', data);
     console.log("messages:", messages);
     if (!messages) return;
+
+    messages = messages.reverse();
 
     let updatedSession = {
       ...currentSession,
@@ -379,9 +391,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     })
 
     this.setState({messages, loading: false, sessions: updatedSessions, currentSession: updatedSession});
-    setTimeout(() => {
-      this.scrollToBottom();
-    }, 1000);
   }
 
   goChat(id: string) {
