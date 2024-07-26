@@ -7,7 +7,8 @@ export enum MostAoActions {
 export type HandleType = {
   owner: string;
   pid: string;
-  handleName: string;
+  handle: string;
+  registered: boolean;
 };
 
 export type ProfileType = {

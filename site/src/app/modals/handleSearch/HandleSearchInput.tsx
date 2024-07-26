@@ -67,18 +67,17 @@ export function HandleSearchInput (props: {
 }
 
 async function searchHandleApi (name: string): Promise<HandleType | null> {
-  const response: HandleType[] = await getDataFromAO(
+  const response: HandleType = await getDataFromAO(
     HANDLE_REGISTRY,
     MostAoActions.QueryHandle,
     {handle: name},
   );
   console.log(response);
-  if (!response || response.length === 0) {
+  if (!response) {
     return null
   }
 
-  let item = response[0];
-  item.handleName = name;
+  let item = response;
   return item
 }
 

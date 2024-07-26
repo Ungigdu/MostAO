@@ -9,7 +9,7 @@ export default function HandleProfile (props: {
   myHandleName: string;
 }) {
   const {data, myHandleName} = props;
-  const {name, handleName, pid} = data;
+  const {name, handle: handleName, pid} = data;
 
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);

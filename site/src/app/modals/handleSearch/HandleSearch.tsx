@@ -16,7 +16,7 @@ export default function HandleSearch (props: {
 
   const setUniqueList = useCallback((profile: HandleProfileType) => {
     setList((v) => {
-      const newList = v.filter((p) => p.handleName !== profile.handleName);
+      const newList = v.filter((p) => p.handle !== profile.handle);
       newList.unshift(profile);
       return newList;
     });
@@ -37,7 +37,7 @@ export default function HandleSearch (props: {
           />
           {list.map((el) => (
             <HandleProfile
-              key={el.handleName}
+              key={el.handle}
               data={el}
               myHandleName={myHandleName}
             />
