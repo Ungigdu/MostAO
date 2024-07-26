@@ -3,6 +3,7 @@ import {HANDLE_REGISTRY} from "../../util/consts";
 import {HandleProfileType, MostAoActions} from "../../util/types";
 import {generateAvatar, messageToAO} from "../../util/util";
 import Loading from "../../elements/Loading";
+import Avatar from "../Avatar/avatar";
 
 export default function HandleProfile (props: {
   data: HandleProfileType;
@@ -54,13 +55,12 @@ export default function HandleProfile (props: {
 
   return (
     <div className="handle-profile-list">
-      <div className="handle-profile">
-        <img src={generateAvatar(pid)} alt="current handle" className="avatar-small" />
-        <span>{name || ''}</span>
-        <span style={{
-          color: '#888',
-        }}>@{handleName}</span>
-      </div>
+      <Avatar
+      name={name}
+      pid={pid}
+      handleName={handleName}
+      imgUrl={data.img}
+      />
       {renderBtn()}
     </div>
   )

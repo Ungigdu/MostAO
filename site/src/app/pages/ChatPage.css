@@ -21,6 +21,9 @@
   flex-direction: column;
   row-gap: 15px;
   flex-grow: 1;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .profile-section {
