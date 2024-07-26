@@ -67,6 +67,7 @@ interface ChatPageState {
   currentSession: Session;
   profiles: {[key: string]: ProfileType};
   isShowHandleSearch: boolean;
+  loadingChatList: boolean;
 }
 
 let chatListPollTimer: NodeJS.Timeout | null = null;
@@ -94,6 +95,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       currentSession: null,
       profiles: {},
       isShowHandleSearch: false,
+      loadingChatList: true,
     };
 
     subscribe('go-chat', () => {
@@ -359,9 +361,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
           ...this.state.currentSession,
           ...sameSession,
         }
-        this.setState({sessions, profiles, currentSession: updatedSession});
+        this.setState({sessions, profiles, currentSession: updatedSession, loadingChatList: false});
       } else {
-        this.setState({sessions, profiles});
+        this.setState({sessions, profiles, loadingChatList: false});
       }
     }
   }
@@ -434,8 +436,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   renderChatList() {
-    // if (this.state.loading)
-    //   return (<Loading />);
+    if (this.state.loadingChatList)
+      return (<Loading />);
     const divs = [];
     const { sessions, currentSession } = this.state;
 
