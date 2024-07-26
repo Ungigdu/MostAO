@@ -24,6 +24,11 @@
   align-items: center;
   border-radius: 25px;
 }
+.handle-name {
+  display: flex;
+  align-items:flex-start;
+  flex-direction: column;
+}
 
 .handle-profile-btn {
   min-height: none;

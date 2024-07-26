@@ -1,4 +1,4 @@
-import {generateAvatar} from "../../util/util";
+import {generateAvatar, shortStr} from "../../util/util";
 
 export default function Avatar (props: {
   pid: string;
@@ -14,11 +14,15 @@ export default function Avatar (props: {
     onClick={onClick}
     className={"handle-profile " + className}>
         <img src={imgUrl || generateAvatar(pid)} alt="current handle" className="avatar-small" />
-        <span>{name || ''}</span>
-        <span style={{
-          color: '#888',
-          marginLeft: '4px',
-        }}>@{handleName}</span>
+        <div className="handle-name">
+          {
+            name && <span>{shortStr(name, 8)}</span>
+          }
+          <span style={{
+            color: '#888',
+            marginLeft: '4px',
+          }}>@{shortStr(handleName, 10)}</span>
+        </div>
       </div>
   )
 }

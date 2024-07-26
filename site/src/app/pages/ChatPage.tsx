@@ -509,7 +509,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
           <div>
             <div className={`chat-msg-header ${owner ? 'my-line' : 'other-line'}`}>
               <div className="chat-msg-nickname">{
-                msgProfile?.name ? shortStr(msgProfile?.name, 15) : `@${msgHandleName}`
+                msgProfile?.name ? shortStr(msgProfile?.name, 10) : `@${shortStr(msgHandleName, 10)}`
               }</div>
 
               {/* <div className="chat-msg-address">{shortAddr(data.address, 3)}</div> */}
