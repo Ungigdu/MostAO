@@ -15,7 +15,8 @@ import { decryptAESKeyWithPlugin, decryptMessageWithAES, encryptMessageWithAES, 
 import Logo from '../elements/Logo';
 import HandleSearchButton from '../modals/handleSearch/HandleSearchButton';
 import HandleSearch from '../modals/handleSearch/HandleSearch';
-import {Messages} from '../util/types';
+import {DecryptedMessage, Messages, ProfileType} from '../util/types';
+import Avatar from '../modals/Avatar/avatar';
 
 declare let window: any;
 let msg_timer: any;
@@ -64,7 +65,7 @@ interface ChatPageState {
   handle: string;
   pid: string;
   currentSession: Session;
-  profiles: {[key: string]: any};
+  profiles: {[key: string]: ProfileType};
   isShowHandleSearch: boolean;
 }
 
@@ -321,12 +322,17 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     if (newSessions.length > 0) {
       console.log("newSessions:", newSessions);
       shouldUpdate = true
-      for (const chat of newSessions) {
-        if (!profiles[chat.otherHandleID]) {
-          const profile = await getProfile(chat.otherHandleID);
-          profiles[chat.otherHandleName] = profile;
+
+      const profilesPromises = newSessions.map(async (chat) => {
+        if (!profiles[chat.otherHandleName]) {
+          await getProfile(chat.otherHandleID).then(res => {
+            profiles[chat.otherHandleName] = res;
+          }).catch(err => {
+            console.error("Failed to get profile:", err);
+          })
         }
-      }
+      });
+      await Promise.allSettled(profilesPromises);
     }
 
     sessions.forEach((el) => {
@@ -377,7 +383,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         keys: keys || []
       };
 
-      this.setState({ currentSession: updatedSession }, () => {
+      this.setState({ currentSession: updatedSession, messages: [], decryptedMessages: [] }, () => {
         this.getMessages();
       });
     } catch (error) {
@@ -436,17 +442,19 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     for (let i = 0; i < sessions.length; i++) {
       const session = sessions[i];
       const selected = currentSession && session.sessionID === currentSession.sessionID;
+      const p = this.state.profiles[session.otherHandleName];
 
       divs.push(
         <div
           key={i}
           className={`chat-page-list ${selected ? 'selected' : ''}`}
           onClick={() => this.selectSession(session)}>
-          <img className='chat-page-list-portrait' src={generateAvatar(session.otherHandleID)} />
-          <div>
-            <div className="chat-page-list-nickname">{session.otherHandleName}</div>
-            {/* <div className="chat-page-list-addr">{shortAddr(data.participant, 4)}</div> */}
-          </div>
+            <Avatar
+            name={p?.name}
+            imgUrl={p?.img}
+            handleName={session.otherHandleName}
+            pid={session.otherHandleID}
+            />
           {
             session.hasNewMessage &&
             <i className='unread-pointer'></i>
@@ -459,7 +467,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   renderChatName() {
-    const { currentSession } = this.state;
+    const { currentSession, profiles } = this.state;
 
     if (!currentSession) {
       return (
@@ -468,21 +476,15 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         </div>
       );
     }
-
+    const p = profiles[currentSession.otherHandleName];
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        <img
-          src={generateAvatar(currentSession.otherHandleID)}
-          className="avatar-small"
-        />
-        <span>{currentSession.otherHandleName}</span>
-      </div>
-    );
+      <Avatar
+      name={p?.name}
+      pid={currentSession.otherHandleID}
+      handleName={currentSession.otherHandleName}
+      imgUrl={p?.img}
+      />
+    )
   }
 
   renderMessages() {
@@ -493,21 +495,19 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     const divs = [];
 
     for (let i = 0; i < decryptedMessages.length; i++) {
-      const data = decryptedMessages[i];
+      const data: DecryptedMessage = decryptedMessages[i];
       const owner = (data.sender === pid);
+      const msgProfile = profiles[owner ? handle : currentSession.otherHandleName];
+      const msgHandleName = owner ? handle : currentSession.otherHandleName;
 
       divs.push(
         <div key={i} className={`chat-msg-line ${owner ? 'my-line' : 'other-line'}`}>
-          {!owner && <img className='chat-msg-portrait' src={generateAvatar(currentSession.otherHandleID)} />}
+          {!owner && <img className='chat-msg-portrait' src={msgProfile.img || generateAvatar(currentSession.otherHandleID)} />}
 
           <div>
             <div className={`chat-msg-header ${owner ? 'my-line' : 'other-line'}`}>
               <div className="chat-msg-nickname">{
-                owner
-                  ? profiles[handle]?.name ? shortStr(profiles[handle]?.name, 15) : handle
-                  : profiles[currentSession.otherHandleName]?.name
-                    ? shortStr(profiles[currentSession.otherHandleName]?.name, 15)
-                    : `@${shortStr(currentSession.otherHandleName, 15)}`
+                msgProfile?.name ? shortStr(msgProfile?.name, 15) : `@${msgHandleName}`
               }</div>
 
               {/* <div className="chat-msg-address">{shortAddr(data.address, 3)}</div> */}
@@ -522,7 +522,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
             </div>
           </div>
 
-          {owner && <img className='chat-msg-portrait' src={generateAvatar(pid)} />}
+          {owner && <img className='chat-msg-portrait' src={msgProfile.img || generateAvatar(pid)} />}
         </div>
       );
     }
@@ -682,6 +682,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
           value={this.state.msg}
           onChange={(e) => this.setState({ msg: e.target.value })}
           onKeyDown={this.handleKeyDown}
+          autoComplete="off"
         />
         <button className="chat-send-button" onClick={() => this.sendMessage()}>Send</button>
       </div>
@@ -701,6 +702,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       )
     }
 
+    const currentProfile: ProfileType = this.state.profiles[this.state.handle];
+
     return (
       <div className="chat-page">
         <BsArrowLeftCircleFill className="profile-page-back" size={30} onClick={() => this.onBack()} />
@@ -713,11 +716,14 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
               {this.renderChatList()}
             </div>
             <div className='profile-section'>
-              <div className="chat-page-my-profile" onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}>
-                <img src={generateAvatar(this.state.pid)} alt="current handle" className="avatar-small" />
-                {/* {currentHandle.profile?.name || `@${currentHandle.handle}`} */}
-                {this.state.handle}
-              </div>
+              <Avatar
+              className="chat-page-my-profile"
+              pid={this.state.pid}
+              name={currentProfile.name}
+              imgUrl={currentProfile.img}
+              handleName={this.state.handle}
+              onClick={() => this.setState({ showHandlesDropdown: !this.state.showHandlesDropdown })}
+              />
 
               <div className="handle-dropdown">
                 {this.renderHandleDropdown()}

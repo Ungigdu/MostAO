@@ -14,6 +14,7 @@ export type ProfileType = {
   bio?: string;
   name?: string;
   pubkey: string;
+  img?: string;
 };
 
 export type HandleProfileType = HandleType & ProfileType;
@@ -24,4 +25,8 @@ export type Messages = {
   id: number;
   sender: string;
   timestamp: number;
+}
+
+export type DecryptedMessage = Messages & {
+  decryptedMessage: string;
 }

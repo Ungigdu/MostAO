@@ -113,12 +113,13 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
     const profile = Server.service.getProfile(Server.service.getActiveAddress());
     console.log("cached profile:", profile)
 
-    const name = this.state.name.trim();
+    const name = this.state.name ? this.state.name.trim() : undefined;
+    const bio = this.state.bio ? this.state.bio.trim() : undefined;
     const data = {
       img: this.state.avatar,
       banner: this.state.banner,
       name: name,
-      bio: this.state.bio.trim(),
+      bio: bio,
       time: this.props.data.time,
       pubkey: this.props.data.pubkey && this.props.data.pubkey.trim() !== ''
         ? this.props.data.pubkey
