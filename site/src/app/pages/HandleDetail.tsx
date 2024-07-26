@@ -34,10 +34,10 @@ const HandleDetail: React.FC = () => {
   useEffect(() => {
     const fetchProfileAndHistory = async () => {
       try {
-        let pid = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handle });
-        pid = pid[0].pid;
+        let res = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handle });
+        const pid = res.pid;
         setPID(pid);
-        
+
         const response = await getProfile(pid);
         const profileData = response || [];
         setProfileData(profileData);
