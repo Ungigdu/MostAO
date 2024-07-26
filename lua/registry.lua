@@ -499,8 +499,8 @@ Handlers.add(
         local data = json.decode(msg.Data)
 
         local stmt = DB:prepare [[
-      SELECT pid, owner FROM handles WHERE handle = :handle;
-    ]]
+            SELECT pid, owner FROM handles WHERE handle = :handle;
+        ]]
 
         if not stmt then
             error("Failed to prepare SQL statement: " .. DB:errmsg())
@@ -511,10 +511,26 @@ Handlers.add(
         })
 
         local rows = query(stmt)
-        print('QueryHandle: ' .. data.handle)
-        print('PID: ' .. rows[1].pid)
-        print('Owner: ' .. rows[1].owner)
-        Handlers.utils.reply(json.encode(rows))(msg)
+
+        if #rows == 0 then
+            print('Handle not registered: ' .. data.handle)
+            Handlers.utils.reply(json.encode({
+                status = "success",
+                handle = data.handle,
+                registered = false
+            }))(msg)
+        else
+            print('QueryHandle: ' .. data.handle)
+            print('PID: ' .. rows[1].pid)
+            print('Owner: ' .. rows[1].owner)
+            Handlers.utils.reply(json.encode({
+                status = "success",
+                handle = data.handle,
+                registered = true,
+                pid = rows[1].pid,
+                owner = rows[1].owner
+            }))(msg)
+        end
         print('QueryHandle Done!')
     end
 )
