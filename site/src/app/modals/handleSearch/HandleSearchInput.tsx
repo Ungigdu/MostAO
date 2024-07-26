@@ -8,6 +8,7 @@ export function HandleSearchInput (props: {
 }) {
   const {onSearch} = props;
   const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
 
   async function searchHandle () {
     let handle = await searchHandleApi(text);
@@ -21,6 +22,17 @@ export function HandleSearchInput (props: {
       ...profile
     }
     onSearch && onSearch(data);
+  }
+
+  async function search() {
+    if (!text) {
+      return
+    }
+    setLoading(true);
+    await searchHandle().catch(e => {
+      console.error(e);
+    })
+    setLoading(false);
   }
 
   function handleChange (e: React.ChangeEvent<HTMLInputElement>) {
@@ -37,15 +49,18 @@ export function HandleSearchInput (props: {
         onChange={handleChange}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
-            searchHandle();
+            search();
           }
         }}
       />
       <button
+        disabled={loading}
         className='handle-search-button'
-        onClick={searchHandle}
+        onClick={search}
       >
-        Search
+        {
+          loading ? 'Searching...' : 'Search'
+        }
       </button>
     </div>
   )

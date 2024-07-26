@@ -118,11 +118,12 @@ a {
   display: inline-block;
   width: 20px;
   height: 20px;
-  margin-bottom: 10px;
+  /* margin-bottom: 10px; */
   border: 2px solid #ccc;
   border-radius: 50%;
   border-top-color: var(--link-color);
   animation: spin 1s ease-in-out infinite;
+  transform-origin: center;
 }
 
 @keyframes spin {

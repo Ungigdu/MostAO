@@ -9,6 +9,7 @@ class Loading extends React.Component<LoadingProps, {}> {
     return (
       <div style={{
         display: 'flex', justifyContent: 'center',
+        overflow: 'hidden',
         marginTop: this.props.marginTop ? this.props.marginTop : '20px'
       }}>
         <div id="loading" />

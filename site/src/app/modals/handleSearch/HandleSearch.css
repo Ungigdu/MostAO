@@ -7,6 +7,12 @@
   width: 60%;
 }
 
+.handle-search-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .handle-profile-list {
   display: flex;
   justify-content: space-between;
