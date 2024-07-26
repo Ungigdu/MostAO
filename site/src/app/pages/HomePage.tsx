@@ -146,6 +146,14 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
 
     this.setState({ loading: true });
+
+    // Check if handle is already registered
+    const handleResponse = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handleName });
+    if (handleResponse && handleResponse.registered) {
+      this.setState({ alert: 'This handle is already registered.', loading: false });
+      return;
+    }
+
     const pubkey = await getWalletPublicKey();
     console.log("register -> pubkey:", pubkey);
     const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName, "pubkey": pubkey }, 'Register');
