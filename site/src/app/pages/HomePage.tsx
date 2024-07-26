@@ -2,13 +2,15 @@ import React from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, getWalletPublicKey } from '../util/util';
+import { connectWallet, getWalletAddress, isLoggedIn, uuid, generateAvatar, getDataFromAO, messageToAO, getWalletPublicKey, getProfile } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
 import { HANDLE_REGISTRY } from '../util/consts';
 import AlertModal from '../modals/AlertModal';
 import Logo from '../elements/Logo';
+import {ProfileType} from '../util/types';
+import Avatar from '../modals/Avatar/avatar';
 
 declare let window: any;
 
@@ -37,6 +39,7 @@ interface HomePageState {
   handleName: any;
   bSignup: boolean;
   navigate: string;
+  profiles: Map<string, ProfileType>;
 }
 
 class HomePage extends React.Component<{}, HomePageState> {
@@ -61,6 +64,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       handleName: '',
       bSignup: false,
       navigate: '',
+      profiles: new Map(),
     };
 
     this.onQuestionYes = this.onQuestionYes.bind(this);
@@ -97,7 +101,19 @@ class HomePage extends React.Component<{}, HomePageState> {
       response.forEach((item) => {
         handles[item.handle] = { handle: item.handle, pid: item.pid };
       });
-      this.setState({ handles, loading: false });
+
+      const profiles: Map<string, ProfileType> = new Map();
+
+      const profilesPromise = response.map(async (item) => {
+        await getProfile(item.pid).then(res => {
+          profiles.set(item.handle, res);
+        }).catch(err => {
+          console.error("Failed to get profile:", err);
+        })
+      })
+      await Promise.allSettled(profilesPromise);
+
+      this.setState({ handles, profiles, loading: false });
     } catch (error) {
       console.error("Error fetching handles:", error);
       this.setState({ handles: {}, loading: false }); // Set to empty array in case of error
@@ -118,7 +134,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       Server.service.setActiveAddress(address);
       publish('wallet-events');
 
-      // your own process 
+      // your own process
       // let process = await getDefaultProcess(address);
       // console.log("Your process:", process)
 
@@ -199,18 +215,25 @@ class HomePage extends React.Component<{}, HomePageState> {
     for (const handleName in this.state.handles) {
       const handle = this.state.handles[handleName];
       if (!handle.handle) continue; // handle is empty string, will be removed.
+      const p = this.state.profiles.get(handleName);
 
       divs.push(
         // <NavLink key={handleName} className='home-page-did' to={`/chat`} state={{ handles: this.state.handles, currentHandle: handleName }}>
         <NavLink key={handleName} className='home-page-did' to={`/chat/${handleName}`}>
-          <img
+          <Avatar
+          name={p?.name}
+          pid={handle.pid}
+          handleName={handleName}
+          imgUrl={p?.img}
+          />
+          {/* <img
             className='home-page-portrait'
             src={generateAvatar(handle.pid)}
           />
 
           <div className="home-page-nickname">
             @{handleName}
-          </div>
+          </div> */}
         </NavLink>
       )
     }
