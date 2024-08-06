@@ -28,7 +28,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "GENERATE_SOURCEMAP=false react-scripts build",
-    "deploy": "irys upload-dir ./build -h https://node1.irys.xyz --wallet ./wallet.json -t arweave --index-file index.html"
+    "deploy": "irys upload-dir ./build -h https://node1.irys.xyz --wallet ./wallet.json -t arweave --index-file index.html",
+    "deploy_with_arkb": "arkb deploy ./build -use-bundler https://node2.bundlr.network --wallet ./wallet.json --tag-name App-Name --tag-value MostAO",
+    "deploy_with_arkb_without_bundler": "arkb deploy ./build --wallet ./wallet.json --tag-name App-Name --tag-value MostAO"
   },
   "eslintConfig": {
     "extends": [
