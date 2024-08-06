@@ -37,7 +37,7 @@ export const TOKEN_ICON = new Map([
   ['wAR', './logo-war.png'],
   ['WAR', './logo-war.png'],
   ['TRUNK', './logo-trunk.png'],
-  ['CRED', './logo-ao.png'],
+  ['CRED', './MostAO.png'],
   ['AOT_TEST', './logo.png'],
   ['TYPR', './logo.png'],
   ['0RBT', './logo-0rbit.jpg'],
