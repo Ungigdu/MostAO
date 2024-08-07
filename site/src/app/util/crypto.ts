@@ -1,13 +1,4 @@
-declare global {
-  interface Window {
-    arweaveWallet: {
-      decrypt: (
-        encryptedKeyArray: Uint8Array,
-        options: { name: string }
-      ) => Promise<ArrayBuffer>;
-    };
-  }
-}
+
 export async function generateAESKey(): Promise<Uint8Array> {
   return crypto.getRandomValues(new Uint8Array(32));
 }
@@ -74,8 +65,16 @@ export async function decryptAESKeyWithPlugin(
       encryptedKeyArray[i] = encryptedKeyBinary.charCodeAt(i);
     }
 
+    // Type assertion for window.arweaveWallet
+    const arweaveWallet = (window as any).arweaveWallet as {
+      decrypt: (
+        encryptedKeyArray: Uint8Array,
+        options: { name: string }
+      ) => Promise<ArrayBuffer>;
+    };
+
     // Use the plugin to decrypt
-    const decryptedKeyArrayBuffer = await window.arweaveWallet.decrypt(
+    const decryptedKeyArrayBuffer = await arweaveWallet.decrypt(
       encryptedKeyArray,
       { name: "RSA-OAEP" }
     );

@@ -13,7 +13,7 @@ import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
 import { ethers } from 'ethers';
 import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnect/browser";
-import { Web3Provider } from '@ethersproject/providers'
+import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
 import { connect } from '@permaweb/aoconnect'
 import { DataItem } from 'arseeding-arbundles'
 import { createData } from 'arseeding-arbundles'
@@ -173,7 +173,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
 
     try {
-      let provider = new ethers.providers.Web3Provider(window.ethereum);
+      let provider = new Web3Provider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
       console.log("[ address ]", address);
@@ -195,8 +195,7 @@ class HomePage extends React.Component<{}, HomePageState> {
   }): Promise<{ id: string; raw: ArrayBuffer }> => {
 
     const provider = new Web3Provider((window as any).ethereum)
-    // let provider = new ethers.providers.Web3Provider(window.ethereum);
-    let signer = new InjectedEthereumSigner(provider);
+    const signer = new InjectedEthereumSigner(provider);
     await signer.setPublicKey()
     const dataItem = createData(data, signer, { tags, target, anchor })
 
