@@ -2,15 +2,22 @@ import React from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, getDataFromAO, messageToAO, getWalletPublicKey, getProfile } from '../util/util';
+import { connectWallet, getWalletAddress, isLoggedIn, uuid, getDataFromAO, messageToAO, getWalletPublicKey, getProfile, browserDetect } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
-import { HANDLE_REGISTRY } from '../util/consts';
+import { HANDLE_REGISTRY, MODULE, SCHEDULER } from '../util/consts';
 import AlertModal from '../modals/AlertModal';
 import Logo from '../elements/Logo';
 import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
+import { ethers } from 'ethers';
+import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnect/browser";
+import { Web3Provider } from '@ethersproject/providers'
+import { connect } from '@permaweb/aoconnect'
+import { DataItem } from 'arseeding-arbundles'
+import { createData } from 'arseeding-arbundles'
+import { InjectedEthereumSigner } from 'arseeding-arbundles/src/signing';
 
 declare let window: any;
 
@@ -152,6 +159,75 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
   }
 
+  // Connect to Metamask
+  async onMetamask() {
+    let name = browserDetect();
+    if (name === 'safari' || name === 'ie' || name === 'yandex' || name === 'others') {
+      this.setState({ alert: 'MetaMask is not supported for this browser! Please use the Wallect Connect.' });
+      return;
+    }
+
+    if (typeof window.ethereum === 'undefined') {
+      this.setState({ alert: 'MetaMask is not installed!' });
+      return;
+    }
+
+    try {
+      let provider = new ethers.providers.Web3Provider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const address = accounts[0];
+      console.log("[ address ]", address);
+    } catch (error: any) {
+      this.setState({ alert: error.message });
+    }
+  }
+
+  createDataItemSigner = () => async ({
+    data,
+    tags = [],
+    target,
+    anchor
+  }: {
+    data: any;
+    tags?: { name: string; value: string }[];
+    target?: string;
+    anchor?: string;
+  }): Promise<{ id: string; raw: ArrayBuffer }> => {
+
+    const provider = new Web3Provider((window as any).ethereum)
+    // let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let signer = new InjectedEthereumSigner(provider);
+    await signer.setPublicKey()
+    const dataItem = createData(data, signer, { tags, target, anchor })
+
+    await dataItem.sign(signer)
+
+    return {
+      id: dataItem.id,
+      raw: dataItem.getRaw()
+    }
+  }
+
+  async spawnProcess() {
+
+    const signer = this.createDataItemSigner() as any
+
+    try {
+      const processId = await spawn({
+        module: MODULE,
+        scheduler: SCHEDULER,
+        signer: signer,
+        tags: [{ name: 'Name', value: 'personal-life-app' }]
+      });
+
+      console.log("processId --> ", processId)
+      return processId;
+    } catch (error) {
+      console.log("spawnProcess --> error:", error)
+      return '';
+    }
+  }
+
   // Register one user
   // This is a temp way, need to search varibale Members
   // to keep one, on browser side or AOS side (in lua code)
@@ -282,6 +358,14 @@ class HomePage extends React.Component<{}, HomePageState> {
           <div className="home-page-slug">Messages and other stuff transmitted by AO</div>
           <button className="home-connect-button" onClick={() => this.connectWallet()}>
             Connect ArConnect
+          </button>
+
+          <button className="home-connect-button" onClick={() => this.onMetamask()}>
+            Connect Metamask
+          </button>
+
+          <button className="home-connect-button" onClick={() => this.spawnProcess()}>
+            spawnProcess
           </button>
         </div>
       )
