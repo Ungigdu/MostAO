@@ -238,7 +238,11 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   async getInfo(handle: string) {
-    const address = await getWalletAddress();
+    let walletType = 'arconnect';
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      walletType = 'metamask';
+    }
+    const address = await getWalletAddress(walletType);
     // console.log("address:", address)
 
     const handles = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });

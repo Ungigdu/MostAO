@@ -2,7 +2,11 @@ import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnec
 import { ARWEAVE_GATEWAY, SCHEDULER, WASM64_MODULE, regexPatterns } from "./consts";
 import { createAvatar } from '@dicebear/core';
 import { micah } from '@dicebear/collection';
+import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
+import { InjectedEthereumSigner } from 'arseeding-arbundles/src/signing'
 import * as Othent from "@othent/kms";
+import { DataItem } from 'arseeding-arbundles'
+import { createData } from 'arseeding-arbundles'
 
 declare let window: any;
 
@@ -453,16 +457,70 @@ export async function evaluate(process: string, data: string) {
   }
 }
 
-export async function messageToAO(process: string, data: any, action: string) {
+export async function messageToAO(process: string, data: any, action: string, walletType?: string) {
   try {
+    let createDataItemSigner = () => {};
+    if (!walletType || walletType === 'arconnect') {
+      createDataItemSigner = () => async ({
+        data,
+        tags = [],
+        target,
+        anchor
+      }: {
+          data: any
+          tags?: { name: string; value: string }[]
+          target?: string
+          anchor?: string
+        }): Promise<{ id: string; raw: ArrayBuffer }> => {
+
+        const signed = await window.arweaveWallet.signDataItem({
+          data,
+          tags,
+          anchor,
+          target
+        })
+        const dataItem = new DataItem(Buffer.from(signed))
+
+        return {
+          id: await dataItem.id,
+          raw: await dataItem.getRaw()
+        }
+        }
+    } else if (walletType === 'metamask') {
+      createDataItemSigner = () => async ({
+        data,
+        tags = [],
+        target,
+        anchor
+      }: {
+        data: any;
+        tags?: { name: string; value: string }[];
+        target?: string;
+        anchor?: string;
+      }): Promise<{ id: string; raw: ArrayBuffer }> => {
+    
+        const provider = new Web3Provider((window as any).ethereum)
+        const signer = new InjectedEthereumSigner(provider);
+        await signer.setPublicKey()
+        const dataItem = createData(data, signer, { tags, target, anchor })
+    
+        await dataItem.sign(signer)
+    
+        return {
+          id: dataItem.id,
+          raw: dataItem.getRaw()
+        }
+      }
+    
+    }
+    const signer = createDataItemSigner() as any;
     const messageId = await message({
       process: process,
-      signer: createDataItemSigner(window.arweaveWallet),
+      signer: signer,
       tags: [{ name: 'Action', value: action }],
       data: JSON.stringify(data)
     });
 
-    // console.log("messageId:", messageId)
     return messageId;
   } catch (error) {
     console.log("messageToAO -> error:", error)
@@ -531,38 +589,68 @@ export async function connectWallet() {
   return true;
 }
 
-export async function getWalletAddress() {
-  let address;
-  try {
-    address = await window.arweaveWallet.getActiveAddress();
-  } catch (error) {
-    return '';
+export async function getWalletAddress(walletType?: string) {
+  if (!walletType || walletType === 'arconnect') {
+      return await window.arweaveWallet.getActiveAddress();
+  } else if (walletType === 'metamask') {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      return accounts[0];
   }
-
-  return address;
 }
 
-export async function getWalletPublicKey() {
+export async function getWalletPublicKey(walletType?: string) {
   let publicKey;
-  try {
-    publicKey = await window.arweaveWallet.getActivePublicKey();
-  } catch (error) {
-    console.log("getWalletPublicKey -> ERR:", error);
-    return '';
+
+  if (!walletType || walletType === 'arconnect') {
+    try {
+      publicKey = await window.arweaveWallet.getActivePublicKey();
+    } catch (error) {
+      console.log("getWalletPublicKey -> ERR:", error);
+      return '';
+    }
+  } else if (walletType === 'metamask') {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) {
+        // Use the first account's address as a public key
+        publicKey = accounts[0];
+      } else {
+        console.log("No MetaMask accounts found");
+        return '';
+      }
+    } catch (error) {
+      console.log("getWalletPublicKey -> ERR:", error);
+      return '';
+    }
   }
+
   console.log("publicKey:", publicKey)
   return publicKey;
 }
 
 export async function isLoggedIn() {
-  if (localStorage.getItem('id_token'))
-    window.arweaveWallet = Othent;
+  let address = '';
 
-  const address = await getWalletAddress();
-  if (address)
-    return address;
-  else
-    return '';
+  if (localStorage.getItem('id_token')) {
+    window.arweaveWallet = Othent;
+    address = await getWalletAddress('arconnect');
+  } 
+
+  if (!address) {
+    try {
+      if (window.ethereum) {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          address = accounts[0];
+        }
+      }
+    } catch (error) {
+      console.error('Failed to connect to MetaMask:', error);
+    }
+  }
+
+  return address || '';
 }
 
 export async function fetchGraphQL(queryObject: any) {

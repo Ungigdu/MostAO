@@ -12,7 +12,6 @@ import Logo from '../elements/Logo';
 import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
 import { ethers } from 'ethers';
-import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnect/browser";
 import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
 import { connect } from '@permaweb/aoconnect'
 import { DataItem } from 'arseeding-arbundles'
@@ -126,10 +125,51 @@ class HomePage extends React.Component<{}, HomePageState> {
       this.setState({ handles: {}, loading: false }); // Set to empty array in case of error
     }
   }
-  async connectWallet() {
-    const connected = await connectWallet();
+  async connectArConnect() {
+    try {
+      await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'ACCESS_PUBLIC_KEY']);
+      return true;
+    } catch (error) {
+      console.error('Failed to connect to ArConnect:', error);
+      return false;
+    }
+  }
+
+  async connectMetaMask() {
+    const name = browserDetect();
+    if (name === 'safari' || name === 'ie' || name === 'yandex' || name === 'others') {
+      this.setState({ alert: 'MetaMask is not supported for this browser! Please use the Wallet Connect.' });
+      return false;
+    }
+
+    if (typeof window.ethereum === 'undefined') {
+      this.setState({ alert: 'MetaMask is not installed!' });
+      return false;
+    }
+
+    try {
+      const provider = new Web3Provider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const address = accounts[0];
+      console.log("[ address ]", address);
+      return true;
+    } catch (error: any) {
+      this.setState({ alert: error.message });
+      return false;
+    }
+  }
+
+  async connectWallet(walletType: string) {
+    let connected = false;
+
+    if (walletType === 'arconnect') {
+      connected = await this.connectArConnect();
+    } else if (walletType === 'metamask') {
+      connected = await this.connectMetaMask();
+    }
+
     if (connected) {
-      const address = await getWalletAddress();
+      const address = await getWalletAddress(walletType);
       this.setState({ isLoggedIn: 'true', address });
       this.getUserHandles(address);
 
@@ -159,74 +199,6 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
   }
 
-  // Connect to Metamask
-  async onMetamask() {
-    let name = browserDetect();
-    if (name === 'safari' || name === 'ie' || name === 'yandex' || name === 'others') {
-      this.setState({ alert: 'MetaMask is not supported for this browser! Please use the Wallect Connect.' });
-      return;
-    }
-
-    if (typeof window.ethereum === 'undefined') {
-      this.setState({ alert: 'MetaMask is not installed!' });
-      return;
-    }
-
-    try {
-      let provider = new Web3Provider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const address = accounts[0];
-      console.log("[ address ]", address);
-    } catch (error: any) {
-      this.setState({ alert: error.message });
-    }
-  }
-
-  createDataItemSigner = () => async ({
-    data,
-    tags = [],
-    target,
-    anchor
-  }: {
-    data: any;
-    tags?: { name: string; value: string }[];
-    target?: string;
-    anchor?: string;
-  }): Promise<{ id: string; raw: ArrayBuffer }> => {
-
-    const provider = new Web3Provider((window as any).ethereum)
-    const signer = new InjectedEthereumSigner(provider);
-    await signer.setPublicKey()
-    const dataItem = createData(data, signer, { tags, target, anchor })
-
-    await dataItem.sign(signer)
-
-    return {
-      id: dataItem.id,
-      raw: dataItem.getRaw()
-    }
-  }
-
-  async spawnProcess() {
-
-    const signer = this.createDataItemSigner() as any
-
-    try {
-      const processId = await spawn({
-        module: MODULE,
-        scheduler: SCHEDULER,
-        signer: signer,
-        tags: [{ name: 'Name', value: 'personal-life-app' }]
-      });
-
-      console.log("processId --> ", processId)
-      return processId;
-    } catch (error) {
-      console.log("spawnProcess --> error:", error)
-      return '';
-    }
-  }
-
   // Register one user
   // This is a temp way, need to search varibale Members
   // to keep one, on browser side or AOS side (in lua code)
@@ -244,11 +216,21 @@ class HomePage extends React.Component<{}, HomePageState> {
       this.setState({ alert: 'This handle is already registered.', loading: false });
       return;
     }
+    let pubkey;
+    let walletType = 'arconnect';
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      walletType = 'metamask';
+    }
 
-    const pubkey = await getWalletPublicKey();
+    if (walletType === 'arconnect') {
+      pubkey = await getWalletPublicKey('arconnect');
+    } else if (walletType === 'metamask') {
+      pubkey = await getWalletPublicKey('metamask');
+    }
+
     console.log("register -> pubkey:", pubkey);
-    const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName, "pubkey": pubkey }, 'Register');
-    console.log("register -> response:", response)
+    const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName, "pubkey": pubkey }, 'Register', walletType);
+    console.log("register -> response:", response);
 
     if (response) {
       // this.getUserHandles(address);
@@ -355,16 +337,11 @@ class HomePage extends React.Component<{}, HomePageState> {
         <div className='home-page-welcome'>
           <Logo />
           <div className="home-page-slug">Messages and other stuff transmitted by AO</div>
-          <button className="home-connect-button" onClick={() => this.connectWallet()}>
+          <button className="home-connect-button" onClick={() => this.connectWallet('arconnect')}>
             Connect ArConnect
           </button>
-
-          <button className="home-connect-button" onClick={() => this.onMetamask()}>
-            Connect Metamask
-          </button>
-
-          <button className="home-connect-button" onClick={() => this.spawnProcess()}>
-            spawnProcess
+          <button className="home-connect-button" onClick={() => this.connectWallet('metamask')}>
+            Connect MetaMask
           </button>
         </div>
       )
