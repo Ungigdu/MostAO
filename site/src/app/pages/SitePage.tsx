@@ -1,9 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import {
-  BsAward, BsBookmark, BsChatText, BsController, 
-  BsPerson
-} from 'react-icons/bs';
+
 import {
   
   isLoggedIn} from '../util/util';

@@ -1,7 +1,6 @@
 import React from 'react';
 import './NavBar.css';
 import { AppConfig } from '../AppConfig';
-import { getMenuIcon } from '../util/util';
 import NavBarButton from './NavBarButton';
 import { Server } from '../../server/server';
 import { subscribe } from '../util/event';

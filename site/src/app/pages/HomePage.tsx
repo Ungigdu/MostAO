@@ -2,21 +2,16 @@ import React from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, getDataFromAO, messageToAO, getWalletPublicKey, getProfile, browserDetect } from '../util/util';
+import { getWalletAddress, isLoggedIn, uuid, getDataFromAO, messageToAO, getWalletPublicKey, getProfile, browserDetect } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
-import { HANDLE_REGISTRY, MODULE, SCHEDULER } from '../util/consts';
+import { HANDLE_REGISTRY } from '../util/consts';
 import AlertModal from '../modals/AlertModal';
 import Logo from '../elements/Logo';
 import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
-import { ethers } from 'ethers';
 import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
-import { connect } from '@permaweb/aoconnect'
-import { DataItem } from 'arseeding-arbundles'
-import { createData } from 'arseeding-arbundles'
-import { InjectedEthereumSigner } from 'arseeding-arbundles/src/signing';
 
 declare let window: any;
 

@@ -1,5 +1,5 @@
 import {useState} from "react";
-import {getDataFromAO, messageToAO} from "../../util/util";
+import {getDataFromAO} from "../../util/util";
 import {HANDLE_REGISTRY} from "../../util/consts";
 import {HandleProfileType, HandleType, MostAoActions, ProfileType} from "../../util/types";
 

@@ -23,7 +23,7 @@ export function checkNumber(value: string) {
   } else {
     return false;
   }
-};
+}
 
 /**
  * Format time to twitter style ones
@@ -75,7 +75,7 @@ export function formatTimestamp(time: number, ago?: boolean) {
   }
 
   return 'just now';
-};
+}
 
 /**
  * Gets the time value of now in milliseconds.
