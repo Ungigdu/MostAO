@@ -2,7 +2,7 @@ import React from 'react';
 import './ChatPage.css';
 import AlertModal from '../modals/AlertModal';
 import {
-  formatTimestamp, generateAvatar, getDataFromAO, getProfile, getWalletAddress,
+  formatTimestamp, generateAvatar, getDataFromAO, getPrivateKey, getProfile, getWalletAddress,
   messageToAO, shortStr, timeOfNow
 } from '../util/util';
 import { HANDLE_REGISTRY } from '../util/consts';
@@ -11,7 +11,10 @@ import { Navigate } from 'react-router-dom';
 import { publish, subscribe } from '../util/event';
 import { BsArrowLeftCircleFill, BsGear } from 'react-icons/bs';
 import { withRouter } from '../util/withRouter';
-import { decryptAESKeyWithPlugin, decryptMessageWithAES, encryptMessageWithAES, generateAESKey, prepareSessionKeyData } from '../util/crypto';
+import {
+  decryptAESKeyWithPlugin, decryptAESKeyWithRSA, decryptMessageWithAES,
+  encryptMessageWithAES, generateAESKey, prepareSessionKeyData
+} from '../util/crypto';
 import Logo from '../elements/Logo';
 import HandleSearchButton from '../modals/handleSearch/HandleSearchButton';
 import HandleSearch from '../modals/handleSearch/HandleSearch';
@@ -105,21 +108,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   componentDidMount() {
-    // const state = this.props.location.state || {};
-    // const handles = state.handles || {};
-    // let currentHandle = state.currentHandle || '';
-
-    // console.log("handles:", handles);
-    // console.log("currentHandle:", currentHandle);
-    // if (!currentHandle && Object.keys(handles).length > 0) {
-    //   currentHandle = Object.keys(handles)[0];
-    // }
-
-    // this.setState({ handles, currentHandle }, () => {
-    //   this.start();
-    // });
-
-    // updated by Kevin
     this.start();
   }
 
@@ -165,14 +153,28 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
         if (sessionKey) {
           if (!currentSession.aesKey) {
-            // decrypt with RSA
+            // // decrypt with RSA (with wallet)
+            // if (sessionKey.pubkey_a === profiles[handle].pubkey) {
+            //   currentSession.aesKey = await decryptAESKeyWithPlugin(
+            //     sessionKey.encrypted_sk_by_a
+            //   );
+            // } else if (sessionKey.pubkey_b === profiles[handle].pubkey) {
+            //   currentSession.aesKey = await decryptAESKeyWithPlugin(
+            //     sessionKey.encrypted_sk_by_b
+            //   );
+            // }
+
+            // decrypt with RSA (not wallet)
+            const privateKey = await getPrivateKey();
             if (sessionKey.pubkey_a === profiles[handle].pubkey) {
-              currentSession.aesKey = await decryptAESKeyWithPlugin(
-                sessionKey.encrypted_sk_by_a
+              currentSession.aesKey = await decryptAESKeyWithRSA(
+                sessionKey.encrypted_sk_by_a,
+                privateKey
               );
             } else if (sessionKey.pubkey_b === profiles[handle].pubkey) {
-              currentSession.aesKey = await decryptAESKeyWithPlugin(
-                sessionKey.encrypted_sk_by_b
+              currentSession.aesKey = await decryptAESKeyWithRSA(
+                sessionKey.encrypted_sk_by_b,
+                privateKey
               );
             }
           }
@@ -239,7 +241,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
   async getInfo(handle: string) {
     const address = await getWalletAddress();
-    // console.log("address:", address)
+    console.log("address:", address)
 
     const handles = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
     console.log("handles:", handles)
@@ -592,7 +594,16 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       generation = keys[0].generation;
       if (keys[0].generation === currentSession.keys[0].generation) {
         if (!currentSession.aesKey) {
-          currentSession.aesKey = keys[0].pubkey_a === profiles[handle].pubkey ? await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_a) : await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_b);
+          // decrypt with RSA (with wallet)
+          // currentSession.aesKey = keys[0].pubkey_a === profiles[handle].pubkey 
+          //   ? await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_a) 
+          //   : await decryptAESKeyWithPlugin(keys[0].encrypted_sk_by_b);
+
+          // decrypt with RSA (not wallet)
+          const privateKey = await getPrivateKey();
+          currentSession.aesKey = keys[0].pubkey_a === profiles[handle].pubkey
+            ? await decryptAESKeyWithRSA(keys[0].encrypted_sk_by_a, privateKey)
+            : await decryptAESKeyWithRSA(keys[0].encrypted_sk_by_b, privateKey);
         }
         aesKey = currentSession.aesKey;
       }
@@ -702,16 +713,19 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     if (this.state.navigate)
       return <Navigate to={this.state.navigate} />;
 
-    if (this.state.loading) {
+    if (this.state.loading || !this.state.handle) {
       return (
         <div className='home-page-welcome'>
           <Logo />
           <Loading marginTop='50px' />
+          <AlertModal message={this.state.alert} button="OK" onClose={() => this.setState({ alert: '' })} />
         </div>
       )
     }
 
     const currentProfile: ProfileType = this.state.profiles[this.state.handle];
+    console.log("this.state.handle:", this.state.handle)
+    console.log("currentProfile:", currentProfile)
 
     return (
       <div className="chat-page">

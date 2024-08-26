@@ -6,6 +6,7 @@ import QuestionModal from '../modals/QuestionModal';
 import { Server } from '../../server/server';
 import { publish } from '../util/event';
 import { Navigate } from 'react-router-dom';
+import { removeKeys } from '../util/IndexedDB';
 
 declare let window: any;
 
@@ -40,6 +41,12 @@ class ConnectWallet extends React.Component<ConnectWalletProps, ConnectWalletSta
   }
 
   async disconnectWallet() {
+    localStorage.removeItem('owner');
+    localStorage.removeItem('pubkey');
+    localStorage.removeItem('privkey');
+    // localStorage.removeItem('wallet');
+    // await removeKeys();  IndexedDB
+
     await window.arweaveWallet.disconnect();
     Server.service.setIsLoggedIn('');
     Server.service.setActiveAddress('');

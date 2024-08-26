@@ -1,12 +1,8 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
-  BsAward, BsBookmark, BsChatText, BsController, 
-  BsPerson
-} from 'react-icons/bs';
-import {
-  
-  isLoggedIn} from '../util/util';
+  isLoggedIn
+} from '../util/util';
 import { Server } from '../../server/server';
 import { publish, subscribe } from '../util/event';
 import './SitePage.css';
@@ -38,8 +34,6 @@ class SitePage extends React.Component<{}, SitePageState> {
     this.onClose = this.onClose.bind(this);
 
     subscribe('wallet-events', () => {
-      // const address = Server.service.isLoggedIn();
-      // this.setState({ address })
       this.start();
     });
   }
@@ -49,15 +43,12 @@ class SitePage extends React.Component<{}, SitePageState> {
   }
 
   async start() {
-    const address = await isLoggedIn();
+    const address = isLoggedIn();
     // console.log("site page -> address:", address)
 
     Server.service.setIsLoggedIn(address);
     Server.service.setActiveAddress(address);
     this.setState({ address })
-
-    // const process = await getDefaultProcess(address);
-    // Server.service.setDefaultProcess(process);
   }
 
   onOpen() {

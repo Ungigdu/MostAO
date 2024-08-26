@@ -2,22 +2,24 @@ import React from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import './HomePage.css';
 import { publish, subscribe } from '../util/event';
-import { connectWallet, getWalletAddress, isLoggedIn, uuid, getDataFromAO, messageToAO, getWalletPublicKey, getProfile, browserDetect } from '../util/util';
+import {
+  connectArConnect, getWalletAddress, isLoggedIn, uuid, getDataFromAO,
+  messageToAO, getProfile, browserDetect, getPublicKey,
+  createArweaveWallet,
+  getWalletPublicKey
+} from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
-import { HANDLE_REGISTRY, MODULE, SCHEDULER } from '../util/consts';
+import { HANDLE_REGISTRY } from '../util/consts';
 import AlertModal from '../modals/AlertModal';
 import Logo from '../elements/Logo';
 import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
-import { ethers } from 'ethers';
-import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnect/browser";
 import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
-import { connect } from '@permaweb/aoconnect'
-import { DataItem } from 'arseeding-arbundles'
 import { createData } from 'arseeding-arbundles'
 import { InjectedEthereumSigner } from 'arseeding-arbundles/src/signing';
+import { generateRSAKeyPair } from '../util/crypto';
 
 declare let window: any;
 
@@ -74,11 +76,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       profiles: new Map(),
     };
 
-    this.onQuestionYes = this.onQuestionYes.bind(this);
-    this.onQuestionNo = this.onQuestionNo.bind(this);
-
     subscribe('wallet-events', () => {
-      // this.forceUpdate();
       this.start();
     });
   }
@@ -91,7 +89,10 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   async start() {
-    const address = await isLoggedIn();
+    // const pubkey = await getWalletPublicKey();
+    // console.log("pubkey:", pubkey)
+
+    const address = isLoggedIn();
     this.setState({ loading: false, isLoggedIn: address, address });
 
     if (address) this.getUserHandles(address);
@@ -119,43 +120,35 @@ class HomePage extends React.Component<{}, HomePageState> {
         })
       })
       await Promise.allSettled(profilesPromise);
-
       this.setState({ handles, profiles, loading: false });
     } catch (error) {
       console.error("Error fetching handles:", error);
       this.setState({ handles: {}, loading: false }); // Set to empty array in case of error
     }
   }
-  async connectWallet() {
-    const connected = await connectWallet();
+
+  async afterConnect(address: string) {
+    const key = await generateRSAKeyPair();
+    if (!key) {
+      alert('RSA keypair generate failed.');
+      return;
+    }
+
+    localStorage.setItem('owner', address);
+
+    this.setState({ isLoggedIn: 'true', address });
+
+    Server.service.setIsLoggedIn(address);
+    Server.service.setActiveAddress(address);
+    publish('wallet-events');
+  }
+
+  // Connect to ArConnect
+  async onArConnect() {
+    const connected = await connectArConnect();
     if (connected) {
       const address = await getWalletAddress();
-      this.setState({ isLoggedIn: 'true', address });
-      this.getUserHandles(address);
-
-      // TODO: should check to if is exist of profile
-      // if (await this.getProfile() == false)
-      //   this.register(address);
-
-      Server.service.setIsLoggedIn(address);
-      Server.service.setActiveAddress(address);
-      publish('wallet-events');
-
-      // your own process
-      // let process = await getDefaultProcess(address);
-      // console.log("Your process:", process)
-
-      // Spawn a new process
-      // if (!process) {
-      //   process = await spawnProcess();
-      //   console.log("Spawn --> processId:", process)
-      // }
-
-      // setTimeout(async () => {
-      //   // load lua code into the process
-      //   let messageId = await evaluate(process, LUA);
-      //   console.log("evaluate -->", messageId)
-      // }, 10000);
+      this.afterConnect(address);
     }
   }
 
@@ -177,6 +170,9 @@ class HomePage extends React.Component<{}, HomePageState> {
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
       console.log("[ address ]", address);
+
+      const wallet = await createArweaveWallet();
+      this.afterConnect(wallet.walletAddress);
     } catch (error: any) {
       this.setState({ alert: error.message });
     }
@@ -207,26 +203,6 @@ class HomePage extends React.Component<{}, HomePageState> {
     }
   }
 
-  async spawnProcess() {
-
-    const signer = this.createDataItemSigner() as any
-
-    try {
-      const processId = await spawn({
-        module: MODULE,
-        scheduler: SCHEDULER,
-        signer: signer,
-        tags: [{ name: 'Name', value: 'personal-life-app' }]
-      });
-
-      console.log("processId --> ", processId)
-      return processId;
-    } catch (error) {
-      console.log("spawnProcess --> error:", error)
-      return '';
-    }
-  }
-
   // Register one user
   // This is a temp way, need to search varibale Members
   // to keep one, on browser side or AOS side (in lua code)
@@ -240,40 +216,24 @@ class HomePage extends React.Component<{}, HomePageState> {
 
     // Check if handle is already registered
     const handleResponse = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handleName });
+    console.log("handleResponse:", handleResponse)
     if (handleResponse && handleResponse.registered) {
       this.setState({ alert: 'This handle is already registered.', loading: false });
       return;
     }
 
-    const pubkey = await getWalletPublicKey();
+    // const pubkey = await getWalletPublicKey();
+    const pubkey = getPublicKey(); // generated, not from wallet.
     console.log("register -> pubkey:", pubkey);
+
     const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName, "pubkey": pubkey }, 'Register');
     console.log("register -> response:", response)
 
     if (response) {
-      // this.getUserHandles(address);
       this.setState({ navigate: '/chat/' + handleName, loading: false });
     } else {
       this.setState({ alert: 'Failed to register a handle.', loading: false });
     }
-  }
-
-  async disconnectWallet() {
-    await window.arweaveWallet.disconnect();
-    this.setState({ isLoggedIn: '', address: '', question: '' });
-
-    // for testing
-    Server.service.setIsLoggedIn('');
-    Server.service.setActiveAddress('');
-    publish('wallet-events');
-  }
-
-  onQuestionYes() {
-    this.disconnectWallet();
-  }
-
-  onQuestionNo() {
-    this.setState({ question: '' });
   }
 
   pickHandle(handle: string) {
@@ -284,7 +244,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     this.setState({ bSignup: true });
   }
 
-  renderDID() {
+  renderHandles() {
     console.log("handles:", this.state.handles);
     const divs = [];
     for (const handleName in this.state.handles) {
@@ -355,17 +315,20 @@ class HomePage extends React.Component<{}, HomePageState> {
         <div className='home-page-welcome'>
           <Logo />
           <div className="home-page-slug">Messages and other stuff transmitted by AO</div>
-          <button className="home-connect-button" onClick={() => this.connectWallet()}>
-            Connect ArConnect
-          </button>
 
-          <button className="home-connect-button" onClick={() => this.onMetamask()}>
-            Connect Metamask
-          </button>
+          <div className='home-page-wallet-title'>
+            Connect a Wallet
+          </div>
 
-          <button className="home-connect-button" onClick={() => this.spawnProcess()}>
-            spawnProcess
-          </button>
+          <div className='home-page-wallet-button' onClick={() => this.onArConnect()}>
+            <img className='home-page-wallet-logo' src='./logo-arconnect.svg' />
+            <div>ArConnect</div>
+          </div>
+
+          <div className='home-page-wallet-button' onClick={() => this.onMetamask()}>
+            <img className='home-page-wallet-logo' src='./logo-metamask.svg' />
+            <div>Metamask</div>
+          </div>
         </div>
       )
     }
@@ -390,7 +353,7 @@ class HomePage extends React.Component<{}, HomePageState> {
           </div>
 
           <div className='home-page-did-container'>
-            {this.renderDID()}
+            {this.renderHandles()}
           </div>
         </div>
       )

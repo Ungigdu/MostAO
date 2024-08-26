@@ -1,5 +1,5 @@
 {
-  "name": "MostAO",
+  "name": "most-ao",
   "version": "0.1.0",
   "private": true,
   "homepage": ".",
@@ -15,6 +15,7 @@
     "@walletconnect/ethereum-provider": "2.10.2",
     "arseeding-arbundles": "^0.6.27",
     "arweave": "^1.15.0",
+    "arweavekit": "^1.5.1",
     "compressorjs": "^1.2.1",
     "ethers": "5.4.1",
     "html-react-parser": "^3.0.4",

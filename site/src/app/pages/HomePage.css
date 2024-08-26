@@ -302,6 +302,42 @@
   height: 30px;
 }
 
+.home-page-wallet-title {
+  font-size: 20px;
+  padding-bottom: 5px;
+  margin-bottom: 20px;
+  color: gray;
+  border-bottom: 1px solid lightgray;
+}
+
+.home-page-wallet-button {
+  display: flex;
+  align-items: center;
+  column-gap: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 12px 0;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  border: 1px solid lightgray;
+  background-color: blanchedalmond;
+}
+
+.home-page-wallet-button:hover {
+  background-color: rgb(248, 220, 173);
+}
+
+.home-page-wallet-logo {
+  width: 30px;
+  height: 30px;
+}
+
+.home-page-wallet-logo-metamask {
+  width: 35px;
+  height: 35px;
+}
+
 @media (max-width: 600px) {
   .home-page-header {
     flex-direction: column;
