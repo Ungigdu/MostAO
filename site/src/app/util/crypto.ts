@@ -1,13 +1,16 @@
 import { ArweaveSigner } from "arseeding-arbundles/src/signing";
 import { createData } from "arseeding-arbundles";
+import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
+import { InjectedEthereumSigner } from 'arseeding-arbundles/src/signing';
 import { JWKInterface } from "arseeding-arbundles/src/interface-jwk";
 import { decryptAESKeywithRSA, encryptAESKeywithRSA } from 'arweavekit/encryption';
+import EthereumSigner from "arseeding-arbundles/src/signing/chains/ethereumSigner";
 
 export async function generateAESKey(): Promise<Uint8Array> {
   return crypto.getRandomValues(new Uint8Array(32));
 }
 
-export async function encryptAESKeyWithRSA(aesKey: Uint8Array,
+export async function encryptAESKeyWithRSAnew(aesKey: Uint8Array,
   publicKeyStr: string) {
   // In a browser environment, use_wallet or nothing can be passed.
   // const wallet = "use_wallet"
@@ -33,26 +36,33 @@ export async function encryptAESKeyWithRSA(aesKey: Uint8Array,
   return btoa(String.fromCharCode.apply(null, encryptedAESKeyArray));
 }
 
-export async function encryptAESKeyWithRSA_OLD(
+export async function encryptAESKeyWithRSA(
   aesKey: Uint8Array,
   publicKeyStr: string
 ): Promise<string> {
   try {
     // Decode the base64 encoded `n` field
-    const binaryDerString = atob(
-      publicKeyStr.replace(/-/g, "+").replace(/_/g, "/")
-    );
-    const binaryDer = new Uint8Array(binaryDerString.length);
-    for (let i = 0; i < binaryDerString.length; i++) {
-      binaryDer[i] = binaryDerString.charCodeAt(i);
-    }
+    // const binaryDerString = atob(
+    //   publicKeyStr.replace(/-/g, "+").replace(/_/g, "/")
+    // );
+    // const binaryDer = new Uint8Array(binaryDerString.length);
+    // for (let i = 0; i < binaryDerString.length; i++) {
+    //   binaryDer[i] = binaryDerString.charCodeAt(i);
+    // }
 
     // Construct the JWK object
-    const jwk = {
-      kty: "RSA",
-      n: publicKeyStr,
-      e: "AQAB",
-    };
+    // const jwk = {
+    //   kty: "RSA",
+    //   n: publicKeyStr,
+    //   e: "AQAB",
+    // };
+
+    // 
+    const key = await importPublicKey(publicKeyStr);
+    const jwk = await crypto.subtle.exportKey(
+      "jwk", // JSON Web Key format
+      key
+    );
 
     // Import the JWK public key
     const publicKey = await window.crypto.subtle.importKey(
@@ -116,7 +126,7 @@ export async function decryptAESKeyWithPlugin(
     throw error;
   }
 }
-export async function decryptAESKeyWithRSA(
+export async function decryptAESKeyWithRSAnew(
   encryptedAESKey: string,
   privateKey: CryptoKey
 ): Promise<Uint8Array> {
@@ -124,28 +134,28 @@ export async function decryptAESKeyWithRSA(
   try {
     // Create a TextEncoder instance
     const encoder = new TextEncoder();
-  
+
     // Encode the string to a Uint8Array
     const uint8Array = encoder.encode(encryptedAESKey);
-  
+
     const isWalletExist = localStorage.getItem('wallet');
     const wallet = JSON.parse(isWalletExist);
-  
+
     const decryptedAESKey = await decryptAESKeywithRSA({
       key: uint8Array,
       wallet: wallet.key
     });
-  
+
     console.log('decryptedAESKey', decryptedAESKey)
 
     return encoder.encode(decryptedAESKey);
-    
+
   } catch (error) {
     console.log('decryptAESKeyWithRSA', error)
   }
 }
 
-export async function decryptAESKeyWithRSA_OLD(
+export async function decryptAESKeyWithRSA(
   encryptedAESKey: string,
   privateKey: CryptoKey
 ): Promise<Uint8Array> {
@@ -356,8 +366,8 @@ export async function importPrivateKey(base64PrivateKey: string): Promise<Crypto
   );
 }
 
-// create a custom signer
-export const dataItemSigner = (jwk: JWKInterface) => async ({
+// create a custom arweave signer
+export const arweaveSigner = (jwk: JWKInterface) => async ({
   data,
   tags = [],
   target,
@@ -372,6 +382,32 @@ export const dataItemSigner = (jwk: JWKInterface) => async ({
   const signer = new ArweaveSigner(jwk);
   const dataItem = createData(data, signer, { tags, target, anchor });
   await dataItem.sign(signer);
+
+  return {
+    id: dataItem.id,
+    raw: dataItem.getRaw()
+  }
+}
+
+// create a custom ethereum signer
+export const ethereumSigner = () => async ({
+  data,
+  tags = [],
+  target,
+  anchor
+}: {
+  data: any;
+  tags?: { name: string; value: string }[];
+  target?: string;
+  anchor?: string;
+}): Promise<{ id: string; raw: ArrayBuffer }> => {
+
+  const provider = new Web3Provider((window as any).ethereum)
+  const signer = new InjectedEthereumSigner(provider);
+  await signer.setPublicKey()
+  const dataItem = createData(data, signer, { tags, target, anchor })
+
+  await dataItem.sign(signer)
 
   return {
     id: dataItem.id,

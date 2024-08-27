@@ -7,7 +7,7 @@ export const regexPatterns = {
 
 
 // export const HANDLE_REGISTRY = "oH5zaOmPCdCL_N2Mn79qqwtoCLXS2y6gcXv7Ohfmh-k";
-export const HANDLE_REGISTRY = "I-3knVGBjvkb5R3cvSGcoTsJyP8RmTPU-aIg4OZBqp4";
+export const HANDLE_REGISTRY = "ohVjKh8HqowSnpnFV8utrtojM6M1JEbl9fWn4GhXIpM";
 export const AO_TWITTER = "8s1ZpAx_NueKS4N2ZOMYWCkl5qVcGkgnBFSnqSVX9Fo";
 export const AO_STORY = "AAwa2zqVLSMvxOPMjhUVtPHS_SN1ObbsaY27X9OPCbw";
 export const STORY_INCOME = "LsNy8F1GSkGvE0IJ6g1RFpHHjKE6tmtXUT91WIv3PMQ";

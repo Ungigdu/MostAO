@@ -2,7 +2,7 @@ import { createDataItemSigner, dryrun, message, spawn } from "@permaweb/aoconnec
 import { ARWEAVE_GATEWAY, SCHEDULER, WASM64_MODULE, regexPatterns } from "./consts";
 import { createAvatar } from '@dicebear/core';
 import { micah } from '@dicebear/collection';
-import { dataItemSigner, importPrivateKey } from "./crypto";
+import { arweaveSigner, ethereumSigner, importPrivateKey } from "./crypto";
 import { createWallet } from "arweavekit/wallet";
 import { CreateWalletReturnProps } from "arweavekit/dist/types/wallet";
 
@@ -461,8 +461,9 @@ export async function evaluate(process: string, data: string) {
   }
 }
 
-export async function messageToAO(process: string, data: any, action: string) {
-  const signer = await getSigner();
+export async function messageToAO(process: string, data: any, action: string, isMetaMask?: boolean) {
+  const signer = await getSigner(isMetaMask);
+
   try {
     const messageId = await message({
       process: process,
@@ -763,7 +764,7 @@ export function trimDecimal(num: number, digits: number) {
   return `${intPart}.${fractPart}`;
 }
 
-export async function getSigner() {
+export async function getSigner(onRegister?: boolean) {
   let wallet = await isLoggedInWithArConnect();
 
   // Logged In With ArConnect
@@ -772,12 +773,20 @@ export async function getSigner() {
   }
 
   // Logged In With Metamask
+  //------------------------
+
+  // To register a handle
+  if (onRegister) {
+    const signer = ethereumSigner() as any;
+    return signer;
+  }
+
   // create an arweave wallet
   wallet = await createArweaveWallet();
 
-  // create a signer
+  // create an arweave signer
   console.log("created wallet:", wallet)
-  const signer = dataItemSigner(wallet.key) as any;
+  const signer = arweaveSigner(wallet.key) as any;
   return signer;
 }
 

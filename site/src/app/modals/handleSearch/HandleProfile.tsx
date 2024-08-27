@@ -21,7 +21,8 @@ export default function HandleProfile (props: {
       const response = await messageToAO(
         HANDLE_REGISTRY,
         {handleA: myHandleName, handleB: handleName},
-        MostAoActions.EstablishSession
+        MostAoActions.EstablishSession,
+        true
       );
       console.log(response);
       if (response) {

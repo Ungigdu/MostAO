@@ -11,7 +11,7 @@ local profiles = {}
 PUBKEY = "__PUBKEY__"
 HANDLE_OWNER = "__HANDLE_OWNER__"
 HANDLE_NAME = "__HANDLE_NAME__"
-REGISTRY_PROCESS_ID = "oH5zaOmPCdCL_N2Mn79qqwtoCLXS2y6gcXv7Ohfmh-k"
+REGISTRY_PROCESS_ID = "__REGISTRY_PROCESS_ID__"
 local sqlite3 = require("lsqlite3")
 DB = DB or sqlite3.open_memory()
 
@@ -48,8 +48,7 @@ Handlers.add(
                 status = "error",
                 message = "Unauthorized",
                 owner = HANDLE_OWNER,
-                msgFrom =
-                    msg.From
+                msgFrom = msg.From
             }))(msg)
             return
         end
@@ -83,9 +82,9 @@ Handlers.add(
     function(msg)
         local wrappedMessage = json.decode(msg.Data)
 
-        if not authorizeAndReply(msg, HANDLE_OWNER, 'Unauthorized attempt to relay message', Handlers.utils.reply) then
-            return
-        end
+        -- if not authorizeAndReply(msg, HANDLE_OWNER, 'Unauthorized attempt to relay message', Handlers.utils.reply) then
+        --    return
+        -- end
 
         if not wrappedMessage.Target or not wrappedMessage.Data or not wrappedMessage.Tags then
             print('Invalid WrappedMessage format')
@@ -147,7 +146,7 @@ Handlers.add(
     Handlers.utils.hasMatchingTag("Action", "GetChatList"),
     function(msg)
         -- if not authorizeAndReply(msg, ao.env.Process.Tags["MostAO-Handle-Owner"], 'Unauthorized attempt to get chat list', Handlers.utils.reply) then
-        --     return
+        --    return
         -- end
 
         local stmt = DB:prepare [[
@@ -430,7 +429,7 @@ local function query(stmt)
 end
 
 local function authorizeAndReply(msg, expected, errorMessage, reply)
-    if msg.From ~= expected then
+    if string.lower(msg.From) ~= expected then
         print(errorMessage)
         reply(json.encode({
             status = "error",
@@ -591,15 +590,19 @@ Handlers.add(
             return
         end
 
+        -- Convert msg.From string to lower characters
+        local owner = string.lower(msg.From)
+
         print('Registering handle: ' .. data.handle)
-        print('Owner: ' .. msg.From)
+        print('Owner: ' .. owner)
 
         ao.send({
             Target = process_id,
             Action = "Eval",
             Data = HANDLE_LUA_CODE_TEMPLATE:gsub("__PUBKEY__", data.pubkey)
                 :gsub("__HANDLE_NAME__", data.handle)
-                :gsub("__HANDLE_OWNER__", msg.From)
+                :gsub("__HANDLE_OWNER__", owner)
+                :gsub("__REGISTRY_PROCESS_ID__", ao.id)
         })
 
         local stmt = DB:prepare [[
@@ -613,7 +616,7 @@ Handlers.add(
         stmt:bind_names({
             handle = data.handle,
             pid = process_id,
-            owner = msg.From
+            owner = owner
         })
 
         stmt:step()
@@ -661,7 +664,7 @@ Handlers.add(
         checkStmt:bind_names({ handle = data.handle })
         local rows = query(checkStmt)
 
-        if #rows == 0 or rows[1].owner ~= msg.From then
+        if #rows == 0 or rows[1].owner ~= string.lower(msg.From) then
             Handlers.utils.reply(json.encode({ status = "error", message = "Unauthorized" }))(msg)
             print('Renounce Unauthorized')
             return
@@ -758,7 +761,6 @@ Handlers.add(
         local ownerA = rowsA[1].owner
         local processB = rowsB[1].pid
         local ownerB = rowsB[1].owner
-
         if not authorizeAndReply(msg, ownerA, 'Unauthorized attempt to establish session for handleA', Handlers.utils.reply) and
             not authorizeAndReply(msg, ownerB, 'Unauthorized attempt to establish session for handleB', Handlers.utils.reply) then
             return

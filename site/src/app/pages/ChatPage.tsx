@@ -119,11 +119,16 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     // if (prevState.currentHandle !== this.state.currentHandle) {
     //   localStorage.setItem('currentHandle', this.state.currentHandle);
     // }
+
     console.log('---- componentDidUpdate ----');
+    
     if (prevState.messages !== this.state.messages) {
       this.decryptAllMessages();
     }
-    if (this.state.currentSession && prevState.currentSession !== this.state.currentSession && this.state.currentSession.hasNewMessage) {
+
+    if (this.state.currentSession && prevState.currentSession !== this.state.currentSession 
+      && this.state.currentSession.hasNewMessage) {
+        
       this.getMessages()
     }
   }
@@ -134,6 +139,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       ...s,
       hasNewMessage: false,
     };
+
     if (
       currentSession &&
       (!currentSession.keys || currentSession.keys.length === 0)
@@ -141,6 +147,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       const keys = await this.getCurrentKeys(currentSession.sessionID);
       currentSession.keys = keys;
     }
+
     const decryptedMessages = await Promise.all(
       messages.map(async (data) => {
         console.log('data:', data);
@@ -312,6 +319,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     // console.log("getChatList for process of pid:", this.state.pid);
 
     const sessions: Session[] = await getDataFromAO(this.state.pid, 'GetChatList', data);
+    console.log("sessions:", sessions)
 
     if (!sessions || sessions.length === 0) {
       this.setState({ sessions: [], loadingChatList: false });
@@ -548,9 +556,15 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       this.setState({ alert: 'Message can be up to 500 characters long.' });
       return;
     }
+
     this.setState({ msg: '' });
     const { sessions, currentSession, profiles, handle, pid, messages } = this.state;
+
+    console.log("currentSession:", currentSession)
     const keys = await getDataFromAO(currentSession.sessionID, 'GetCurrentKeys', {});
+    console.log("keys:", keys)
+    // return;
+
     let generation = 1;
     let aesKey: Uint8Array;
 
@@ -619,7 +633,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     this.setState({ msg: '' });
 
-    await messageToAO(pid, relayMessage, 'RelayMessage');
+    let resp = await messageToAO(pid, relayMessage, 'RelayMessage');
 
     setTimeout(() => {
       this.scrollToBottom();

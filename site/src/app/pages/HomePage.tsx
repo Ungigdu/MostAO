@@ -5,9 +5,7 @@ import { publish, subscribe } from '../util/event';
 import {
   connectArConnect, getWalletAddress, isLoggedIn, uuid, getDataFromAO,
   messageToAO, getProfile, browserDetect, getPublicKey,
-  createArweaveWallet,
-  getWalletPublicKey
-} from '../util/util';
+  createArweaveWallet} from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
@@ -17,8 +15,6 @@ import Logo from '../elements/Logo';
 import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
 import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
-import { createData } from 'arseeding-arbundles'
-import { InjectedEthereumSigner } from 'arseeding-arbundles/src/signing';
 import { generateRSAKeyPair } from '../util/crypto';
 
 declare let window: any;
@@ -134,7 +130,7 @@ class HomePage extends React.Component<{}, HomePageState> {
       return;
     }
 
-    localStorage.setItem('owner', address);
+    localStorage.setItem('owner', address.toLowerCase());
 
     this.setState({ isLoggedIn: 'true', address });
 
@@ -172,34 +168,10 @@ class HomePage extends React.Component<{}, HomePageState> {
       console.log("[ address ]", address);
 
       const wallet = await createArweaveWallet();
-      this.afterConnect(wallet.walletAddress);
+      // this.afterConnect(wallet.walletAddress);
+      this.afterConnect(address);
     } catch (error: any) {
       this.setState({ alert: error.message });
-    }
-  }
-
-  createDataItemSigner = () => async ({
-    data,
-    tags = [],
-    target,
-    anchor
-  }: {
-    data: any;
-    tags?: { name: string; value: string }[];
-    target?: string;
-    anchor?: string;
-  }): Promise<{ id: string; raw: ArrayBuffer }> => {
-
-    const provider = new Web3Provider((window as any).ethereum)
-    const signer = new InjectedEthereumSigner(provider);
-    await signer.setPublicKey()
-    const dataItem = createData(data, signer, { tags, target, anchor })
-
-    await dataItem.sign(signer)
-
-    return {
-      id: dataItem.id,
-      raw: dataItem.getRaw()
     }
   }
 
@@ -216,7 +188,6 @@ class HomePage extends React.Component<{}, HomePageState> {
 
     // Check if handle is already registered
     const handleResponse = await getDataFromAO(HANDLE_REGISTRY, 'QueryHandle', { handle: handleName });
-    console.log("handleResponse:", handleResponse)
     if (handleResponse && handleResponse.registered) {
       this.setState({ alert: 'This handle is already registered.', loading: false });
       return;
@@ -238,7 +209,13 @@ class HomePage extends React.Component<{}, HomePageState> {
     const pubkey = getPublicKey(); // generated, not from wallet.
     console.log("register -> pubkey:", pubkey);
 
-    const response = await messageToAO(HANDLE_REGISTRY, { "handle": handleName, "pubkey": pubkey }, 'Register');
+    const response = await messageToAO(
+      HANDLE_REGISTRY, 
+      { "handle": handleName, "pubkey": pubkey }, 
+      'Register',
+      true
+    );
+
     console.log("register -> response:", response)
 
     if (response) {

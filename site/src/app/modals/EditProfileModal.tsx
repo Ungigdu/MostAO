@@ -146,7 +146,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
 
     console.log('ProfileUpdate', this.props.pid, data);
 
-    const response = await messageToAO(this.props.pid, data, 'ProfileUpdate');
+    const response = await messageToAO(this.props.pid, data, 'ProfileUpdate', true);
 
     if (response) {
       Server.service.addProfileToCache(data);
