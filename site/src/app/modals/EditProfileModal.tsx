@@ -174,7 +174,7 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
 
   onSelectFileChange(e: React.FormEvent<HTMLInputElement>): void {
     this.processImage(e.currentTarget.files[0]);
-  };
+  }
 
   processImage(file: any) {
     if (!file) return;

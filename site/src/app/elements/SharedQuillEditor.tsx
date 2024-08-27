@@ -94,14 +94,14 @@ class SharedQuillEditor extends React.Component<SharedQuillEditorProps, SharedQu
       text = text.replace(/[\r\n]/g, ''); // remove \n (enter)
       this.props.onChange(text.length);
     }
-  };
+  }
 
   onContentChangeSelection() {
     const range = this.quillRef.getSelection();
     if (range) {
       this.quillPosition = range.index;
     }
-  };
+  }
 
   onQuillImage() {
     this.setState({ openAddMedia: true });

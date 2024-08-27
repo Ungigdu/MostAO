@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { generateAvatar, getDataFromAO, getProfile, messageToAO } from '../util/util';
+import { generateAvatar, getDataFromAO, getProfile } from '../util/util';
 import EditProfileModal from '../modals/EditProfileModal';
 import { BsArrowLeftCircleFill, BsChat } from 'react-icons/bs';
 import { HANDLE_REGISTRY } from '../util/consts';

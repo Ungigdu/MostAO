@@ -1,11 +1,10 @@
 import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { publish } from '../util/event';
 import './NavBar.css';
 import { BsAward, BsBell, BsBookmark, BsChatText, BsController, BsHouse, BsPerson } from 'react-icons/bs';
 import { ICON_SIZE } from '../util/consts';
 import { AiOutlineFire } from 'react-icons/ai';
-import { Server } from '../../server/server';
 
 interface NavBarButtonProps {
   // icon:string,

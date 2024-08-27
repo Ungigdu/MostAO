@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {HANDLE_REGISTRY} from "../../util/consts";
 import {HandleProfileType, MostAoActions} from "../../util/types";
-import {generateAvatar, messageToAO} from "../../util/util";
+import { messageToAO} from "../../util/util";
 import Loading from "../../elements/Loading";
 import Avatar from "../Avatar/avatar";
 

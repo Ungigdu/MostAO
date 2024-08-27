@@ -222,6 +222,18 @@ class HomePage extends React.Component<{}, HomePageState> {
       return;
     }
 
+    // let pubkey;
+    // let walletType = 'arconnect';
+    // if (window.ethereum && window.ethereum.selectedAddress) {
+    //   walletType = 'metamask';
+    // }
+
+    // if (walletType === 'arconnect') {
+    //   pubkey = await getWalletPublicKey('arconnect');
+    // } else if (walletType === 'metamask') {
+    //   pubkey = await getWalletPublicKey('metamask');
+    // }
+
     // const pubkey = await getWalletPublicKey();
     const pubkey = getPublicKey(); // generated, not from wallet.
     console.log("register -> pubkey:", pubkey);

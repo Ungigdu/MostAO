@@ -21,7 +21,7 @@ export function checkNumber(value: string) {
   } else {
     return false;
   }
-};
+}
 
 /**
  * Format time to twitter style ones
@@ -73,7 +73,7 @@ export function formatTimestamp(time: number, ago?: boolean) {
   }
 
   return 'just now';
-};
+}
 
 /**
  * Gets the time value of now in milliseconds.
@@ -463,7 +463,6 @@ export async function evaluate(process: string, data: string) {
 
 export async function messageToAO(process: string, data: any, action: string) {
   const signer = await getSigner();
-
   try {
     const messageId = await message({
       process: process,
@@ -473,7 +472,6 @@ export async function messageToAO(process: string, data: any, action: string) {
       data: JSON.stringify(data)
     });
 
-    // console.log("messageId:", messageId)
     return messageId;
   } catch (error) {
     console.log("messageToAO -> error:", error)
@@ -558,14 +556,32 @@ export async function isLoggedInWithArConnect() {
   return address;
 }
 
-export async function getWalletPublicKey() {
+export async function getWalletPublicKey(walletType?: string) {
   let publicKey;
-  try {
-    publicKey = await window.arweaveWallet.getActivePublicKey();
-  } catch (error) {
-    console.log("getWalletPublicKey -> ERR:", error);
-    return '';
+
+  if (!walletType || walletType === 'arconnect') {
+    try {
+      publicKey = await window.arweaveWallet.getActivePublicKey();
+    } catch (error) {
+      console.log("getWalletPublicKey -> ERR:", error);
+      return '';
+    }
+  } else if (walletType === 'metamask') {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) {
+        // Use the first account's address as a public key
+        publicKey = accounts[0];
+      } else {
+        console.log("No MetaMask accounts found");
+        return '';
+      }
+    } catch (error) {
+      console.log("getWalletPublicKey -> ERR:", error);
+      return '';
+    }
   }
+
   console.log("publicKey:", publicKey)
   return publicKey;
 }
@@ -754,7 +770,7 @@ export async function getSigner() {
   if (wallet) {
     return createDataItemSigner(window.arweaveWallet);
   }
-  
+
   // Logged In With Metamask
   // create an arweave wallet
   wallet = await createArweaveWallet();
