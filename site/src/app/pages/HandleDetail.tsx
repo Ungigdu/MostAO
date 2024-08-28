@@ -42,7 +42,6 @@ const HandleDetail: React.FC = () => {
         if (profileData) {
           // TODO: implement getChatHistory
           const history = await getDataFromAO(pid, "GetChatList", {});
-          console.log('history => ', history);
           setChatHistory(history);
         }
       } catch (error) {

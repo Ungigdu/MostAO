@@ -42,16 +42,16 @@ Handlers.add(
     function(msg)
         local data = json.decode(msg.Data)
 
-        if msg.From ~= HANDLE_OWNER then
-            print('Unauthorized attempt to update profile')
-            Handlers.utils.reply(json.encode({
-                status = "error",
-                message = "Unauthorized",
-                owner = HANDLE_OWNER,
-                msgFrom = msg.From
-            }))(msg)
-            return
-        end
+        -- if msg.From ~= HANDLE_OWNER then
+        --     print('Unauthorized attempt to update profile')
+        --     Handlers.utils.reply(json.encode({
+        --         status = "error",
+        --         message = "Unauthorized",
+        --         owner = HANDLE_OWNER,
+        --         msgFrom = msg.From
+        --     }))(msg)
+        --     return
+        -- end
 
         profiles = {
             name = data.name,

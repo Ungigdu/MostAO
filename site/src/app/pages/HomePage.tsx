@@ -85,13 +85,11 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   async start() {
-    // const pubkey = await getWalletPublicKey();
-    // console.log("pubkey:", pubkey)
-
-    const address = isLoggedIn();
+    const address = await isLoggedIn();
     this.setState({ loading: false, isLoggedIn: address, address });
 
     if (address) this.getUserHandles(address);
+    await createArweaveWallet();
   }
 
   async getUserHandles(address: string) {
@@ -124,18 +122,14 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   async afterConnect(address: string) {
-    const key = await generateRSAKeyPair();
-    if (!key) {
-      alert('RSA keypair generate failed.');
-      return;
-    }
-
-    localStorage.setItem('owner', address.toLowerCase());
+    await generateRSAKeyPair();
 
     this.setState({ isLoggedIn: 'true', address });
-
+    
     Server.service.setIsLoggedIn(address);
     Server.service.setActiveAddress(address);
+
+    localStorage.setItem('owner', address.toLowerCase());
     publish('wallet-events');
   }
 
@@ -167,8 +161,6 @@ class HomePage extends React.Component<{}, HomePageState> {
       const address = accounts[0];
       console.log("[ address ]", address);
 
-      const wallet = await createArweaveWallet();
-      // this.afterConnect(wallet.walletAddress);
       this.afterConnect(address);
     } catch (error: any) {
       this.setState({ alert: error.message });
@@ -193,21 +185,8 @@ class HomePage extends React.Component<{}, HomePageState> {
       return;
     }
 
-    // let pubkey;
-    // let walletType = 'arconnect';
-    // if (window.ethereum && window.ethereum.selectedAddress) {
-    //   walletType = 'metamask';
-    // }
-
-    // if (walletType === 'arconnect') {
-    //   pubkey = await getWalletPublicKey('arconnect');
-    // } else if (walletType === 'metamask') {
-    //   pubkey = await getWalletPublicKey('metamask');
-    // }
-
-    // const pubkey = await getWalletPublicKey();
     const pubkey = getPublicKey(); // generated, not from wallet.
-    console.log("register -> pubkey:", pubkey);
+    // console.log("register -> pubkey:", pubkey);
 
     const response = await messageToAO(
       HANDLE_REGISTRY, 

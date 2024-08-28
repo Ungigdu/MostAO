@@ -3,37 +3,9 @@ import { createData } from "arseeding-arbundles";
 import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
 import { InjectedEthereumSigner } from 'arseeding-arbundles/src/signing';
 import { JWKInterface } from "arseeding-arbundles/src/interface-jwk";
-import { decryptAESKeywithRSA, encryptAESKeywithRSA } from 'arweavekit/encryption';
-import EthereumSigner from "arseeding-arbundles/src/signing/chains/ethereumSigner";
 
 export async function generateAESKey(): Promise<Uint8Array> {
   return crypto.getRandomValues(new Uint8Array(32));
-}
-
-export async function encryptAESKeyWithRSAnew(aesKey: Uint8Array,
-  publicKeyStr: string) {
-  // In a browser environment, use_wallet or nothing can be passed.
-  // const wallet = "use_wallet"
-  // In a node environment, Arweave wallet JWK can be used.
-  // const wallet = JSON.parse(fs.readFileSync('wallet.json').toString());
-
-  const isWalletExist = localStorage.getItem('wallet');
-  const wallet = JSON.parse(isWalletExist);
-
-  // Create a TextDecoder instance
-  const decoder = new TextDecoder('utf-8');
-
-  // Decode the Uint8Array to a string
-  const str = decoder.decode(aesKey);
-
-  const encryptedAESKey = await encryptAESKeywithRSA({
-    key: str,
-    wallet: wallet.key
-  });
-
-  // Convert the encrypted AES key to a base64 string
-  const encryptedAESKeyArray = Array.from(new Uint8Array(encryptedAESKey));
-  return btoa(String.fromCharCode.apply(null, encryptedAESKeyArray));
 }
 
 export async function encryptAESKeyWithRSA(
@@ -41,25 +13,8 @@ export async function encryptAESKeyWithRSA(
   publicKeyStr: string
 ): Promise<string> {
   try {
-    // Decode the base64 encoded `n` field
-    // const binaryDerString = atob(
-    //   publicKeyStr.replace(/-/g, "+").replace(/_/g, "/")
-    // );
-    // const binaryDer = new Uint8Array(binaryDerString.length);
-    // for (let i = 0; i < binaryDerString.length; i++) {
-    //   binaryDer[i] = binaryDerString.charCodeAt(i);
-    // }
-
-    // Construct the JWK object
-    // const jwk = {
-    //   kty: "RSA",
-    //   n: publicKeyStr,
-    //   e: "AQAB",
-    // };
-
-    // 
     const key = await importPublicKey(publicKeyStr);
-    const jwk = await crypto.subtle.exportKey(
+    const jwk = await window.crypto.subtle.exportKey(
       "jwk", // JSON Web Key format
       key
     );
@@ -93,6 +48,7 @@ export async function encryptAESKeyWithRSA(
     throw error;
   }
 }
+
 export async function decryptAESKeyWithPlugin(
   encryptedAESKey: string
 ): Promise<Uint8Array> {
@@ -124,34 +80,6 @@ export async function decryptAESKeyWithPlugin(
   } catch (error) {
     console.error("Error in decryptAESKeyWithPlugin:", error);
     throw error;
-  }
-}
-export async function decryptAESKeyWithRSAnew(
-  encryptedAESKey: string,
-  privateKey: CryptoKey
-): Promise<Uint8Array> {
-
-  try {
-    // Create a TextEncoder instance
-    const encoder = new TextEncoder();
-
-    // Encode the string to a Uint8Array
-    const uint8Array = encoder.encode(encryptedAESKey);
-
-    const isWalletExist = localStorage.getItem('wallet');
-    const wallet = JSON.parse(isWalletExist);
-
-    const decryptedAESKey = await decryptAESKeywithRSA({
-      key: uint8Array,
-      wallet: wallet.key
-    });
-
-    console.log('decryptedAESKey', decryptedAESKey)
-
-    return encoder.encode(decryptedAESKey);
-
-  } catch (error) {
-    console.log('decryptAESKeyWithRSA', error)
   }
 }
 
@@ -278,6 +206,10 @@ export async function prepareSessionKeyData(
 
 // Added by Kevin
 export async function generateRSAKeyPair() {
+  const pubkey = localStorage.getItem('pubkey');
+  const privkey = localStorage.getItem('privkey');
+  if (pubkey && privkey) return;
+
   try {
     // 使用 Web Crypto API 生成 RSA 密钥对
     const keyPair = await window.crypto.subtle.generateKey(
@@ -315,7 +247,6 @@ export async function generateRSAKeyPair() {
     };
   } catch (error) {
     console.error('Error generating RSA key pair:', error);
-    return '';
   }
 }
 

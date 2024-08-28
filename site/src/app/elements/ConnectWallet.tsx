@@ -42,10 +42,6 @@ class ConnectWallet extends React.Component<ConnectWalletProps, ConnectWalletSta
 
   async disconnectWallet() {
     localStorage.removeItem('owner');
-    localStorage.removeItem('pubkey');
-    localStorage.removeItem('privkey');
-    // localStorage.removeItem('wallet');
-    // await removeKeys();  IndexedDB
 
     await window.arweaveWallet.disconnect();
     Server.service.setIsLoggedIn('');

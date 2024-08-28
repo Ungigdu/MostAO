@@ -1,7 +1,7 @@
 import React from 'react';
 import { BsFillXCircleFill } from 'react-icons/bs';
 import { Server } from '../../server/server';
-import { messageToAO, generateAvatar, uuid, getWalletPublicKey } from '../util/util';
+import { messageToAO, generateAvatar, uuid, getPublicKey } from '../util/util';
 import './Modal.css'
 import './EditProfileModal.css'
 import MessageModal from './MessageModal';
@@ -69,7 +69,6 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
   }
 
   async start() {
-    // console.log('Edit Profile => ', this.props.data)
     this.setState({
       banner: this.props.data.banner,
       avatar: this.props.data.img,
@@ -111,10 +110,9 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
 
   async saveProfile() {
     const profile = Server.service.getProfile(Server.service.getActiveAddress());
-    console.log("cached profile:", profile)
 
-    const name = this.state.name ? this.state.name.trim() : undefined;
-    const bio = this.state.bio ? this.state.bio.trim() : undefined;
+    const name = this.state.name ? this.state.name.trim() : '';
+    const bio = this.state.bio ? this.state.bio.trim() : '';
     const data = {
       img: this.state.avatar,
       banner: this.state.banner,
@@ -123,9 +121,8 @@ class EditProfileModal extends React.Component<EditProfileModalProps, EditProfil
       time: this.props.data.time,
       pubkey: this.props.data.pubkey && this.props.data.pubkey.trim() !== ''
         ? this.props.data.pubkey
-        : await getWalletPublicKey(),
+        : getPublicKey(),
     };
-    console.log("data:", data)
 
     if (!this.isDirty(data, profile)) {
       this.props.onClose();

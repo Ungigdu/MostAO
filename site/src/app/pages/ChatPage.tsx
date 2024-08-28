@@ -3,7 +3,7 @@ import './ChatPage.css';
 import AlertModal from '../modals/AlertModal';
 import {
   formatTimestamp, generateAvatar, getDataFromAO, getPrivateKey, getProfile, getWalletAddress,
-  messageToAO, shortStr, timeOfNow
+  messageToAO, msOfNow, shortStr, timeOfNow
 } from '../util/util';
 import { HANDLE_REGISTRY } from '../util/consts';
 import Loading from '../elements/Loading';
@@ -71,6 +71,8 @@ interface ChatPageState {
   profiles: { [key: string]: ProfileType };
   isShowHandleSearch: boolean;
   loadingChatList: boolean;
+  bSending: boolean;
+  msgSending: string;
 }
 
 let chatListPollTimer: NodeJS.Timeout | null = null;
@@ -99,6 +101,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       profiles: {},
       isShowHandleSearch: false,
       loadingChatList: true,
+      bSending: false,
+      msgSending: '',
     };
 
     subscribe('go-chat', () => {
@@ -120,15 +124,15 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     //   localStorage.setItem('currentHandle', this.state.currentHandle);
     // }
 
-    console.log('---- componentDidUpdate ----');
-    
+    // console.log('---- componentDidUpdate ----');
+
     if (prevState.messages !== this.state.messages) {
       this.decryptAllMessages();
     }
 
-    if (this.state.currentSession && prevState.currentSession !== this.state.currentSession 
+    if (this.state.currentSession && prevState.currentSession !== this.state.currentSession
       && this.state.currentSession.hasNewMessage) {
-        
+
       this.getMessages()
     }
   }
@@ -150,12 +154,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     const decryptedMessages = await Promise.all(
       messages.map(async (data) => {
-        console.log('data:', data);
-        console.log('currentSession:', currentSession);
         const sessionKey = currentSession.keys?.find(
           (key) => key.generation === data.generation
         );
-        console.log('sessionKey:', sessionKey);
         let decryptedMessage = '';
 
         if (sessionKey) {
@@ -239,7 +240,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     const path = window.location.hash.slice(1);
     const handle = path.substring(6);
-    console.log("handle:", handle);
 
     setTimeout(() => {
       this.getInfo(handle);
@@ -247,11 +247,8 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   async getInfo(handle: string) {
-    const address = await getWalletAddress();
-    console.log("address:", address)
-
+    let address = await getWalletAddress();
     const handles = await getDataFromAO(HANDLE_REGISTRY, 'GetHandles', { owner: address });
-    console.log("handles:", handles)
 
     let pid = '';
     for (let i = 0; i < handles.length; i++) {
@@ -260,7 +257,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         break;
       }
     }
-    console.log("pid:", pid)
 
     if (!pid) {
       this.setState({ alert: 'Your handle is not found. Please refresh this page.', loading: false });
@@ -268,7 +264,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }
 
     const myProfile = await getProfile(pid);
-    console.log("myProfile:", myProfile);
 
     this.setState({ handle, pid, address, handles, profiles: { [handle]: myProfile } });
 
@@ -284,9 +279,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     this.getChatList();
 
     let friendProfile = await getProfile(this.state.friend);
-    console.log("friendProfile:", friendProfile);
-
-    // for test
     if (!friendProfile) return;
 
     if (friendProfile.length === 0) return;
@@ -313,13 +305,9 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   }
 
   async getChatList() {
-    // if (this.state.chatList.length > 0 || !this.state.currentHandle) return;
-
     const data = { address: this.state.address };
-    // console.log("getChatList for process of pid:", this.state.pid);
 
     const sessions: Session[] = await getDataFromAO(this.state.pid, 'GetChatList', data);
-    console.log("sessions:", sessions)
 
     if (!sessions || sessions.length === 0) {
       this.setState({ sessions: [], loadingChatList: false });
@@ -330,13 +318,10 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       (session) => !oldSessions.find((s) => s.sessionID === session.sessionID)
     );
 
-    console.log("getChatList:", sessions);
-
     let shouldUpdate = false;
 
     const profiles = { ...this.state.profiles };
     if (newSessions.length > 0) {
-      console.log("newSessions:", newSessions);
       shouldUpdate = true
 
       const profilesPromises = newSessions.map(async (chat) => {
@@ -353,14 +338,16 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     sessions.forEach((el) => {
       const oldItem = oldSessions.find((s) => s.sessionID === el.sessionID);
-      console.log(
-        'sessions forEach:',
-        el.otherHandleName,
-        'old: ',
-        oldItem?.lastMessageTime,
-        'new: ',
-        el?.lastMessageTime
-      );
+
+      // console.log(
+      //   'sessions forEach:',
+      //   el.otherHandleName,
+      //   'old: ',
+      //   oldItem?.lastMessageTime,
+      //   'new: ',
+      //   el?.lastMessageTime
+      // );
+
       if (oldItem && (oldItem.lastMessageTime || 0) < el.lastMessageTime) {
         el.hasNewMessage = true;
         shouldUpdate = true;
@@ -420,7 +407,7 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
   async getMessages() {
     const { currentSession } = this.state;
     if (!currentSession) return;
-    console.log("DM messages -->");
+
     const data = { from: 0, until: timeOfNow(), limit: 100, order: 'DESC' };
 
     let messages: any[] = await getDataFromAO(currentSession.sessionID, 'QueryMessage', data);
@@ -440,7 +427,13 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       return el;
     })
 
-    this.setState({ messages, loading: false, sessions: updatedSessions, currentSession: updatedSession });
+    this.setState({
+      messages,
+      loading: false,
+      sessions: updatedSessions,
+      currentSession: updatedSession,
+      bSending: false
+    });
   }
 
   goChat(id: string) {
@@ -544,6 +537,20 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       );
     }
 
+    // render the sending message right now
+    if (this.state.bSending) {
+      divs.push(
+        <div key={msOfNow()} className={`chat-msg-line my-line`}>
+          <div>
+            <div className='sending-message-tip'>sending...</div>
+            <div className={`chat-message sending-message`}>
+              {this.state.msgSending}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return divs.length > 0 ? divs : <div>No messages yet.</div>;
   }
 
@@ -557,41 +564,39 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       return;
     }
 
+    // render the sending message right now
+    this.setState({ bSending: true, msgSending: msg });
+    setTimeout(() => {
+      this.scrollToBottom();
+    }, 50);
+
     this.setState({ msg: '' });
     const { sessions, currentSession, profiles, handle, pid, messages } = this.state;
 
-    console.log("currentSession:", currentSession)
     const keys = await getDataFromAO(currentSession.sessionID, 'GetCurrentKeys', {});
-    console.log("keys:", keys)
-    // return;
 
     let generation = 1;
     let aesKey: Uint8Array;
 
     if (!messages.length) {
       if (!keys || keys.length === 0) {
-        console.log("keys not found");
-
         aesKey = await generateAESKey();
-        console.log("generated AES key:", aesKey);
         const ownPublicKey = profiles[handle].pubkey;
-        console.log("ownPublicKey:", ownPublicKey);
-        console.log("currentSession.otherHandleID :", currentSession.otherHandleName);
         const otherPublicKey = profiles[currentSession.otherHandleName].pubkey;
-        console.log("otherPublicKey:", otherPublicKey);
 
         if (!ownPublicKey || !otherPublicKey) {
           this.setState({ alert: 'Public keys not found.' });
           return;
         }
+
         const sessionKeyData = await prepareSessionKeyData(aesKey, ownPublicKey, otherPublicKey);
-        console.log("session key data:", sessionKeyData);
 
         const updatedSession: Session = {
           ...currentSession,
           keys: [{ ...sessionKeyData, generation }],
           aesKey,
         };
+
         const updatedSessions = sessions.map(session =>
           session.sessionID === currentSession.sessionID ? updatedSession : session
         );
@@ -624,7 +629,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }
 
     const encryptedMessage = await encryptMessageWithAES(msg, aesKey);
-    console.log("encryptedMessage:", encryptedMessage);
     const relayMessage = {
       Target: currentSession.sessionID,
       Data: JSON.stringify({ content: encryptedMessage, generation: generation }),
@@ -633,11 +637,11 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
     this.setState({ msg: '' });
 
-    let resp = await messageToAO(pid, relayMessage, 'RelayMessage');
+    await messageToAO(pid, relayMessage, 'RelayMessage');
 
-    setTimeout(() => {
-      this.scrollToBottom();
-    }, 1000);
+    // setTimeout(() => {
+    //   this.scrollToBottom();
+    // }, 1000);
   }
 
   handleKeyDown = (event: any) => {
@@ -738,8 +742,6 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }
 
     const currentProfile: ProfileType = this.state.profiles[this.state.handle];
-    console.log("this.state.handle:", this.state.handle)
-    console.log("currentProfile:", currentProfile)
 
     return (
       <div className="chat-page">

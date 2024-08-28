@@ -43,7 +43,7 @@ class SitePage extends React.Component<{}, SitePageState> {
   }
 
   async start() {
-    const address = isLoggedIn();
+    const address = await isLoggedIn();
     // console.log("site page -> address:", address)
 
     Server.service.setIsLoggedIn(address);

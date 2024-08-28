@@ -1,21 +1,22 @@
-import {useState} from "react";
-import {getDataFromAO} from "../../util/util";
-import {HANDLE_REGISTRY} from "../../util/consts";
-import {HandleProfileType, HandleType, MostAoActions, ProfileType} from "../../util/types";
+import { useState } from "react";
+import { getDataFromAO } from "../../util/util";
+import { HANDLE_REGISTRY } from "../../util/consts";
+import { HandleProfileType, HandleType, MostAoActions, ProfileType } from "../../util/types";
 
-export function HandleSearchInput (props: {
+export function HandleSearchInput(props: {
   onSearch?: (profile: HandleProfileType) => void;
 }) {
-  const {onSearch} = props;
+  const { onSearch } = props;
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function searchHandle () {
+  async function searchHandle() {
     let handle = await searchHandleApi(text);
     if (!handle) {
-      console.log('Handle not found');
+      alert('Handle not found!');
       return
     }
+
     let profile = await searchProfile(handle.pid);
     let data: HandleProfileType = {
       ...handle,
@@ -35,7 +36,7 @@ export function HandleSearchInput (props: {
     setLoading(false);
   }
 
-  function handleChange (e: React.ChangeEvent<HTMLInputElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setText(e.target.value);
   }
 
@@ -66,22 +67,21 @@ export function HandleSearchInput (props: {
   )
 }
 
-async function searchHandleApi (name: string): Promise<HandleType | null> {
+async function searchHandleApi(name: string): Promise<HandleType | null> {
   const response: HandleType = await getDataFromAO(
     HANDLE_REGISTRY,
     MostAoActions.QueryHandle,
-    {handle: name},
+    { handle: name },
   );
-  console.log(response);
-  if (!response) {
-    return null
-  }
+  console.log('Search handle:', response);
 
-  let item = response;
-  return item
+  if (!response) return null;
+  if (!response.registered) return null;
+
+  return response;
 }
 
-async function searchProfile (process: string): Promise<ProfileType> {
+async function searchProfile(process: string): Promise<ProfileType> {
   const response: ProfileType = await getDataFromAO(
     process,
     MostAoActions.GetProfile

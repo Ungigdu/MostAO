@@ -149,6 +149,17 @@
   background-color: green;
 }
 
+.sending-message-tip {
+  font-size: 13px;
+  font-style: italic;
+  color: gray;
+}
+
+.sending-message {
+  border-bottom-right-radius: 0;
+  background-color: rgb(119, 189, 119);
+}
+
 .chat-msg-time {
   display: flex;
   font-size: 13px;
