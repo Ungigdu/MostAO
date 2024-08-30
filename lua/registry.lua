@@ -417,6 +417,12 @@ DB:exec [[
     process_id TEXT NOT NULL,
     pool_name TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS groups (
+    group_id TEXT PRIMARY KEY,
+    owner TEXT NOT NULL,
+    created_at INTEGER
+  );
 ]]
 
 local function query(stmt)
@@ -842,5 +848,59 @@ Handlers.add(
 
         checkAndRefillPool(SESSION_POOL_NAME)
         Handlers.utils.reply("Session Establish Success")(msg)
+    end
+)
+
+-- ------------------
+-- Testing for group
+
+Handlers.add(
+    "SpawnGroup",
+    Handlers.utils.hasMatchingTag("Action", "SpawnGroup"),
+    function(msg)
+        local data = json.decode(msg.Data)
+
+        -- get a process that already created before.
+        local process_id = getProcessFromPool(HANDLE_POOL_NAME)
+
+        if not process_id then
+            Handlers.utils.reply(json.encode({ status = "error", message = "No available process in the pool." }))(msg)
+            return
+        end
+
+        -- Convert msg.From string to lower characters
+        local owner = string.lower(msg.From)
+
+        print('Group Owner: ' .. owner)
+
+        ao.send({
+            Target = process_id,
+            Action = "Eval",
+            Data = GROUP_LUA_CODE:gsub("__PUBKEY__", data.pubkey)
+                :gsub("__GROUP_OWNER__", owner)
+                :gsub("__REGISTRY_PROCESS_ID__", ao.id)
+        })
+
+        local stmt = DB:prepare [[
+            REPLACE INTO groups (group_id, owner, created_at) VALUES (:group_id, :owner, :created_at);
+        ]]
+
+        if not stmt then
+            error("Failed to prepare SQL statement: " .. DB:errmsg())
+        end
+
+        stmt:bind_names({
+            group_id = process_id,
+            owner = owner,
+            created_at = os.time()
+        })
+
+        stmt:step()
+        stmt:reset()
+
+        print('Group spawn success')
+        Handlers.utils.reply("Group spawn success")(msg)
+
+        checkAndRefillPool(HANDLE_POOL_NAME)
     end
 )

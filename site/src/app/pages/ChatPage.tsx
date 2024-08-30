@@ -20,6 +20,7 @@ import HandleSearchButton from '../modals/handleSearch/HandleSearchButton';
 import HandleSearch from '../modals/handleSearch/HandleSearch';
 import { DecryptedMessage, Messages, ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
+import NewGroupModal from '../modals/NewGroupModal';
 
 declare let window: any;
 let msg_timer: any;
@@ -73,6 +74,7 @@ interface ChatPageState {
   loadingChatList: boolean;
   bSending: boolean;
   msgSending: string;
+  openNewGroupModal: boolean;
 }
 
 let chatListPollTimer: NodeJS.Timeout | null = null;
@@ -103,7 +105,11 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
       loadingChatList: true,
       bSending: false,
       msgSending: '',
+      openNewGroupModal: false,
     };
+
+    this.openNewGroupModal = this.openNewGroupModal.bind(this);
+    this.closeNewGroupModal = this.closeNewGroupModal.bind(this);
 
     subscribe('go-chat', () => {
       this.setState({ navigate: '' });
@@ -135,6 +141,14 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
 
       this.getMessages()
     }
+  }
+
+  openNewGroupModal() {
+    this.setState({ openNewGroupModal: true });
+  }
+
+  closeNewGroupModal() {
+    this.setState({ openNewGroupModal: false });
   }
 
   async decryptAllMessages() {
@@ -488,12 +502,15 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
     }
     const p = profiles[currentSession.otherHandleName];
     return (
-      <Avatar
-        name={p?.name}
-        pid={currentSession.otherHandleID}
-        handleName={currentSession.otherHandleName}
-        imgUrl={p?.img}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Avatar
+          name={p?.name}
+          pid={currentSession.otherHandleID}
+          handleName={currentSession.otherHandleName}
+          imgUrl={p?.img}
+        />
+        <button onClick={this.openNewGroupModal}>Create Group</button>
+      </div>
     )
   }
 
@@ -791,6 +808,11 @@ class ChatPage extends React.Component<ChatPageProps, ChatPageState> {
         <HandleSearch
           isOpen={this.state.isShowHandleSearch}
           onClose={this.closeHandleSearch}
+          myHandleName={this.state.handle}
+        />
+        <NewGroupModal
+          isOpen={this.state.openNewGroupModal}
+          onClose={this.closeNewGroupModal}
           myHandleName={this.state.handle}
         />
       </div>
