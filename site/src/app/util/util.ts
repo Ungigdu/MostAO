@@ -744,6 +744,7 @@ export function trimDecimal(num: number, digits: number) {
 
 export async function getSigner(onRegister?: boolean) {
   let wallet = await isLoggedInWithArConnect();
+  console.log("getSigner --> wallet:", wallet)
 
   // Logged In With ArConnect
   if (wallet) {
@@ -784,4 +785,8 @@ export async function createArweaveWallet() {
   }
 
   return wallet;
+}
+
+export function wait(ms: number): Promise<void> {
+  return new Promise<void>(res => setTimeout(() => res(), ms));
 }

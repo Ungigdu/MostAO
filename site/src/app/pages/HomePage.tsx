@@ -5,7 +5,10 @@ import { publish, subscribe } from '../util/event';
 import {
   connectArConnect, getWalletAddress, isLoggedIn, uuid, getDataFromAO,
   messageToAO, getProfile, browserDetect, getPublicKey,
-  createArweaveWallet} from '../util/util';
+  createArweaveWallet,
+  spawnProcess,
+  wait
+} from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import Loading from '../elements/Loading';
@@ -125,7 +128,7 @@ class HomePage extends React.Component<{}, HomePageState> {
     await generateRSAKeyPair();
 
     this.setState({ isLoggedIn: 'true', address });
-    
+
     Server.service.setIsLoggedIn(address);
     Server.service.setActiveAddress(address);
 
@@ -189,8 +192,8 @@ class HomePage extends React.Component<{}, HomePageState> {
     // console.log("register -> pubkey:", pubkey);
 
     const response = await messageToAO(
-      HANDLE_REGISTRY, 
-      { "handle": handleName, "pubkey": pubkey }, 
+      HANDLE_REGISTRY,
+      { "handle": handleName, "pubkey": pubkey },
       'Register',
       true
     );
@@ -206,6 +209,45 @@ class HomePage extends React.Component<{}, HomePageState> {
 
   pickHandle(handle: string) {
     // this.setState({ bounty: qty });
+  }
+
+  async getAOProfiles() {
+    
+    const test_profile_pid = '2J5-gu0n-7CVVm_jsiaACBlcNAWpxlGpvQT5JSsPFZQ';
+    
+    // const registry = '_nKkAiKqJy-7pfvDTO7ts0YOO6ANg50svSuF_fx3ONc';
+    const registry = 'SNy4m-DrqxWl01YqGM4sxI8qCni-58re8uuJLvZPypY';  // Production Registry
+
+    const data = {
+      UserName: 'zc',
+      DisplayName: 'ZC',
+      Description: 'code',
+      CoverImage: '12',
+      ProfileImage: '34',
+    }
+    
+    // const create_profile = await messageToAO(registry, data, 'Create-Profile');
+    
+    // const create_profile = await messageToAO(test_profile_pid, data, 'Update-Profile');
+    // console.log("create_profile:", create_profile)
+    // return;
+    
+    // const ao_profiles = await getDataFromAO(registry, 
+    //   'Read-Profiles', {Addresses: ['nWJEJiAV27AlTFdE-SlqJhBPEHDo2SIjm6I2zUAHO8c']});
+      
+    // const ao_profiles = await getDataFromAO(registry, 
+    //   'Get-Profiles-By-Delegate', {Address: 'nWJEJiAV27AlTFdE-SlqJhBPEHDo2SIjm6I2zUAHO8c'});
+
+    // const ao_profiles = await getDataFromAO(registry, 
+    //   'Read-Profile', {ProfileId: '2J5-gu0n-7CVVm_jsiaACBlcNAWpxlGpvQT5JSsPFZQ'});
+
+    const ao_profiles = await getDataFromAO(registry, 'Read-Metadata');
+
+    console.log("ao_profiles:", ao_profiles)
+
+    // const process = await spawnProcess();
+    // await wait(5000);
+    // console.log("Spawn --> processId:", process)
   }
 
   signUp() {
@@ -313,6 +355,12 @@ class HomePage extends React.Component<{}, HomePageState> {
     else if (Object.keys(this.state.handles).length > 0) {
       return (
         <div className='home-page-welcome'>
+
+          {/* TEST TO AO PROFILE */}
+          <div className='home-page-did' onClick={() => this.getAOProfiles()}>
+            Get profiles
+          </div>
+
           <Logo />
           {this.state.bSignup && this.renderSignUp()}
 
