@@ -1018,3 +1018,31 @@ Handlers.add(
         print(msg.Data)
     end
 )
+
+
+Handlers.add('GetProfile', Handlers.utils.hasMatchingTag('Action', 'GetProfile'),
+	function(msg)
+		print('MSG FROM: ' .. msg.From)
+		-- ao.send({
+		-- 	Target = msg.From,
+		-- 	Action = 'Read-Success',
+		-- 	Data = json.encode({
+		-- 		Profile = Profile,
+		-- 		Assets = Assets,
+		-- 		Collections = Collections,
+		-- 		Owner = Owner,
+		-- 		Roles = Roles or {},
+		-- 		RESP = "SUCCESS"
+		-- 	})
+		-- })
+
+		-- return json.encode({
+		-- 	Profile = Profile
+		-- })
+
+		-- Handlers.utils.reply('success')(msg)
+
+		Handlers.utils.reply(json.encode({Profile=Profile}))(msg)
+
+	end
+)

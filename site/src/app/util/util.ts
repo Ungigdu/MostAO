@@ -641,6 +641,47 @@ export async function getDefaultProcess(owner: string) {
   }
 }
 
+export async function getAOGProcess() {
+  const start = performance.now();
+  console.log('==> [getAOGProcess]');
+
+  const queryObject = {
+    query:
+      `{
+        transactions (
+          first: 10000
+          tags: [
+            { name: "Data-Protocol", values: ["ao"] },
+            { name: "Type", values: ["Process"] },
+            { name: "Name", values: ["AO-Games-Profile"]}
+          ]
+        ) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }`
+  };
+
+  try {
+    const response = await fetchGraphQL(queryObject);
+    console.log("response:", response)
+
+    const end = performance.now();
+    console.log(`<== [getAOGProcess] [${Math.round(end - start)} ms]`);
+
+    if (response.length == 0)
+      return '';
+    else
+      return response[0].node.id;
+  } catch (error) {
+    console.log("getAOGProcess -> ERR:", error);
+    return '';
+  }
+}
+
 export async function downloadFromArweave(txid: string) {
   const url = ARWEAVE_GATEWAY + txid;
   const resp = await fetch(url);

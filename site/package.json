@@ -13,6 +13,7 @@
     "@types/react": "^18.0.9",
     "@types/react-dom": "^18.0.4",
     "@walletconnect/ethereum-provider": "2.10.2",
+    "ardb": "^1.1.10",
     "arseeding-arbundles": "^0.6.27",
     "arweave": "^1.15.0",
     "arweavekit": "^1.5.1",

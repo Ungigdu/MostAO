@@ -7,7 +7,8 @@ import {
   messageToAO, getProfile, browserDetect, getPublicKey,
   createArweaveWallet,
   spawnProcess,
-  wait
+  wait,
+  getAOGProcess
 } from '../util/util';
 import { Server } from '../../server/server';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
@@ -19,6 +20,8 @@ import { ProfileType } from '../util/types';
 import Avatar from '../modals/Avatar/avatar';
 import { Web3Provider } from 'arseeding-arbundles/node_modules/@ethersproject/providers'
 import { generateRSAKeyPair } from '../util/crypto';
+import Arweave from 'arweave';
+import ArDB from 'ardb';
 
 declare let window: any;
 
@@ -212,11 +215,82 @@ class HomePage extends React.Component<{}, HomePageState> {
   }
 
   async getAOProfiles() {
-    
+
+    // await getAOGProcess();
+    // return
+
+    // AO Profile Production Registry Process
+    const registry = 'SNy4m-DrqxWl01YqGM4sxI8qCni-58re8uuJLvZPypY';
+
+    // get data from registry process
+    const ao_profiles = await getDataFromAO(registry, 'Read-Metadata');
+    console.log("ao_profiles:", ao_profiles)
+
+    let amt = 0;
+    for (let i = 0; i < ao_profiles.length; i++) {
+      const description = ao_profiles[i].Description;
+      // console.log("description:", description)
+      
+      if (description) {
+        let found = description.indexOf('spawned by AO games');
+        if (found !== -1) {
+          amt++;
+        }
+
+        // let found = description.includes('spawned by AO games');
+        // if (found) {
+        //   amt++;
+        // }
+      }
+    }
+
+    console.log("TOTAL --> ", amt)
+
+    // return
+
+    // calc the amount of ao games profiles
+    let amount = 0;
+    // initialize an arweave instance
+    const arweave = Arweave.init({});
+    // arweave is Arweave Client instance
+    const ardb = new ArDB(arweave);
+
+    // get all data
+    const txs = await ardb.search('transactions')
+      .tags([
+        { name: "Data-Protocol", values: "ao" },
+        { name: "Type", values: "Process" },
+        { name: 'Name', values: 'AO-Games-Profile' }
+      ])
+      .limit(100)
+      .find();
+
+    console.log("txs:", txs)
+
+    amount = txs.length;
+    console.log("FIRST:", amount)
+
+    // Continue paging though the results with...
+    let check = true;
+    while (check) {
+      const newTxs = await ardb.next() as any;
+      console.log("newTxs:", newTxs)
+
+      amount += newTxs.length;
+      console.log("NEXT --> ", amount)
+
+      if (newTxs.length === 0) {
+        check = false;
+        console.log("TOTAL --> ", amount)
+      }
+    }
+
+    return
+
     const test_profile_pid = '2J5-gu0n-7CVVm_jsiaACBlcNAWpxlGpvQT5JSsPFZQ';
-    
+
     // const registry = '_nKkAiKqJy-7pfvDTO7ts0YOO6ANg50svSuF_fx3ONc';
-    const registry = 'SNy4m-DrqxWl01YqGM4sxI8qCni-58re8uuJLvZPypY';  // Production Registry
+    // const registry = 'SNy4m-DrqxWl01YqGM4sxI8qCni-58re8uuJLvZPypY';  // Production Registry
 
     const data = {
       UserName: 'zc',
@@ -225,25 +299,28 @@ class HomePage extends React.Component<{}, HomePageState> {
       CoverImage: '12',
       ProfileImage: '34',
     }
-    
+
     // const create_profile = await messageToAO(registry, data, 'Create-Profile');
-    
+
     // const create_profile = await messageToAO(test_profile_pid, data, 'Update-Profile');
     // console.log("create_profile:", create_profile)
     // return;
-    
-    // const ao_profiles = await getDataFromAO(registry, 
-    //   'Read-Profiles', {Addresses: ['nWJEJiAV27AlTFdE-SlqJhBPEHDo2SIjm6I2zUAHO8c']});
-      
-    // const ao_profiles = await getDataFromAO(registry, 
-    //   'Get-Profiles-By-Delegate', {Address: 'nWJEJiAV27AlTFdE-SlqJhBPEHDo2SIjm6I2zUAHO8c'});
 
     // const ao_profiles = await getDataFromAO(registry, 
-    //   'Read-Profile', {ProfileId: '2J5-gu0n-7CVVm_jsiaACBlcNAWpxlGpvQT5JSsPFZQ'});
+    // 'Read-Profiles', {Addresses: ['nWJEJiAV27AlTFdE-SlqJhBPEHDo2SIjm6I2zUAHO8c']});
 
-    const ao_profiles = await getDataFromAO(registry, 'Read-Metadata');
+    // const ao_profiles = await getDataFromAO(registry, 
+    //   'Get-Profiles-By-Delegate', {Address: 'ROI36j87t4_WANbmAcBR550JEaspZ8xGM8z3i2EG-VQ'});
 
-    console.log("ao_profiles:", ao_profiles)
+    // const ao_profiles = await getDataFromAO(registry, 
+    //   'Read-Profile', {ProfileId: test_profile_pid});
+
+    // const ao_profiles = await getDataFromAO(registry, 'Read-Metadata');
+
+    // const ao_profiles = await getDataFromAO(test_profile_pid, 'Info');
+    // const ao_profiles = await getDataFromAO(test_profile_pid, 'GetProfile');
+
+    // console.log("ao_profiles:", ao_profiles)
 
     // const process = await spawnProcess();
     // await wait(5000);
